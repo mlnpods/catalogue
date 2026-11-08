@@ -59,6 +59,7 @@ button:disabled{opacity:.5;cursor:wait}
 <div class="actions"><button class="secondary" id="refreshButton" type="button">Actualiser</button><button class="secondary" id="logoutButton" type="button">Déconnexion</button></div>
 <p id="message" class="status" role="status"></p></div>
 <div id="products"></div>
+<div class="panel" id="variantsPanel"><h2>Stocks des variantes</h2><p class="status">Modifie séparément les quantités de chaque modèle. Les changements sont enregistrés dans Supabase.</p><div id="variants"></div><p id="variantsMessage" class="status" role="status"></p></div>
 </div>
 </section>
 </div>
@@ -90,6 +91,31 @@ async function loadProducts(){
  </div><button type="button" class="save-button">Enregistrer</button> <span class="status save-status" role="status"></span></div>`).join('');
  show('message',data.length+' produit(s) chargé(s).');
 }
+const VARIANT_SEEDS=[
+ {variant_id:'airpods-5',product_id:'airpods',variant_name:'AirPods 5'},
+ {variant_id:'airpods-4',product_id:'airpods',variant_name:'AirPods 4'},
+ {variant_id:'airpods-pro-3',product_id:'airpods',variant_name:'AirPods Pro 3'},
+ {variant_id:'airpods-pro-2',product_id:'airpods',variant_name:'AirPods Pro 2'},
+ {variant_id:'airpods-max-noir',product_id:'airpods-max',variant_name:'Noir'}
+];
+async function loadVariants(){
+ show('variantsMessage','Chargement des stocks par variante...');
+ const {data,error}=await db.from('product_variants').select('*').order('product_id').order('variant_name');
+ if(error){$('variants').innerHTML='<p class="status">La table des variantes n’est pas encore configurée. Exécute le fichier SQL fourni dans Supabase, puis actualise.</p>';show('variantsMessage','Configuration nécessaire : '+error.message);return;}
+ const rows=data||[];const byId=Object.fromEntries(rows.map(v=>[v.variant_id,v]));
+ const groups=[{title:'AirPods',items:VARIANT_SEEDS.slice(0,4)},{title:'AirPods Max',items:VARIANT_SEEDS.slice(4)}];
+ $('variants').innerHTML=groups.map(g=>`<div class="product"><h2>${esc(g.title)}</h2><div class="grid">${g.items.map(seed=>{const v=byId[seed.variant_id]||seed;return `<div><label>${esc(seed.variant_name)} — quantité en stock</label><input type="number" min="0" step="1" class="variant-quantity" data-id="${esc(seed.variant_id)}" data-product="${esc(seed.product_id)}" data-name="${esc(seed.variant_name)}" value="${Number(v.stock_quantity??0)}"></div>`;}).join('')}</div><button type="button" class="save-variants">Enregistrer ${esc(g.title)}</button><span class="status variant-save-status"></span></div>`).join('');
+ show('variantsMessage','Stocks par variante chargés.');
+}
+async function saveVariants(button){
+ const card=button.closest('.product'),status=card.querySelector('.variant-save-status');
+ const inputs=[...card.querySelectorAll('.variant-quantity')];
+ const rows=[];
+ for(const input of inputs){const qty=Number(input.value);if(input.value===''||!Number.isInteger(qty)||qty<0){status.textContent='Saisis des quantités entières positives.';return;}rows.push({variant_id:input.dataset.id,product_id:input.dataset.product,variant_name:input.dataset.name,stock_quantity:qty,updated_at:new Date().toISOString()});}
+ button.disabled=true;status.textContent='Enregistrement...';
+ const {error}=await db.from('product_variants').upsert(rows,{onConflict:'variant_id'});
+ button.disabled=false;status.textContent=error?'Erreur : '+error.message:'✓ Stocks enregistrés !';
+}
 async function saveProduct(button){
  const card=button.closest('.product');const status=card.querySelector('.save-status');
  const priceRaw=card.querySelector('.price').value;const oldRaw=card.querySelector('.old-price').value;const quantityRaw=card.querySelector('.quantity').value;
@@ -103,7 +129,7 @@ async function saveProduct(button){
  button.disabled=false;status.textContent=error?'Erreur : '+error.message:'✓ Enregistré !';
 }
 async function login(event){event.preventDefault();const button=$('loginButton');button.disabled=true;show('loginMessage','Connexion en cours...');
- try{const {data,error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;if(!data.session)throw new Error('Aucune session reçue.');setLoggedIn(true);await loadProducts();}
+ try{const {data,error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;if(!data.session)throw new Error('Aucune session reçue.');setLoggedIn(true);await loadProducts();await loadVariants();}
  catch(e){show('loginMessage','Erreur : '+(e.message||'Connexion impossible.'));}
  finally{button.disabled=false;}}
 async function logout(){try{await db.auth.signOut();}catch(e){console.error(e);}setLoggedIn(false);$('password').value='';show('loginMessage','Déconnecté.');}
@@ -131,14 +157,15 @@ async function init(){
  if(!window.supabase||typeof window.supabase.createClient!=='function'){show('loginMessage','La bibliothèque Supabase ne s’est pas chargée. Recharge la page ou réessaie plus tard.');return;}
  db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
  $('loginForm').addEventListener('submit',login);
- $('refreshButton').addEventListener('click',loadProducts);
+ $('refreshButton').addEventListener('click',async()=>{await loadProducts();await loadVariants();});
  $('refreshOrders').addEventListener('click',loadOrders);
  $('showProducts').addEventListener('click',()=>{$('productsSection').classList.remove('hidden');$('ordersSection').classList.add('hidden');$('showProducts').classList.remove('secondary');$('showOrders').classList.add('secondary');});
  $('showOrders').addEventListener('click',async()=>{$('productsSection').classList.add('hidden');$('ordersSection').classList.remove('hidden');$('showOrders').classList.remove('secondary');$('showProducts').classList.add('secondary');await loadOrders();});
  $('logoutButton').addEventListener('click',logout);
  $('products').addEventListener('click',e=>{const b=e.target.closest('.save-button');if(b)saveProduct(b);});
+ $('variants').addEventListener('click',e=>{const b=e.target.closest('.save-variants');if(b)saveVariants(b);});
  $('ordersList').addEventListener('click',e=>{const b=e.target.closest('.update-order');if(b)updateOrder(b);});
- try{const {data,error}=await db.auth.getSession();if(error)throw error;if(data.session){setLoggedIn(true);await loadProducts();}}
+ try{const {data,error}=await db.auth.getSession();if(error)throw error;if(data.session){setLoggedIn(true);await loadProducts();await loadVariants();}}
  catch(e){show('loginMessage','Erreur de session : '+e.message);}
 }
 document.addEventListener('DOMContentLoaded',init);
