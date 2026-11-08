@@ -5,216 +5,112 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#070707">
 <title>Administration</title>
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{--bg:#070707;--gold:#ffd21c;--panel:#151515;--line:#333}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:white;font-family:Arial,sans-serif}
+body{margin:0;background:var(--bg);color:#fff;font-family:Arial,sans-serif}
 .wrap{width:min(760px,92%);margin:35px auto}
 header{text-align:center;margin-bottom:28px}
 header img{width:150px;max-height:100px;object-fit:contain}
 h1{font-size:22px;letter-spacing:4px;color:var(--gold);margin:12px 0}
 h2{font-size:19px}
 .panel,.product{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:16px}
-input{width:100%;padding:13px;margin:7px 0 14px;background:#090909;color:white;border:1px solid #444;border-radius:9px;font-size:16px}
+input{width:100%;padding:13px;margin:7px 0 14px;background:#090909;color:#fff;border:1px solid #444;border-radius:9px;font-size:16px}
 label{display:block;font-size:13px;color:#ccc;margin-top:9px}
 button{border:0;border-radius:9px;padding:13px 18px;background:var(--gold);color:#111;font-weight:bold;font-size:15px;cursor:pointer}
-button.secondary{background:#292929;color:white}
-button:disabled{opacity:.5}
+button.secondary{background:#292929;color:#fff}
+button:disabled{opacity:.5;cursor:wait}
 .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:15px}
 .product h2{color:var(--gold);margin:0 0 12px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .checks{display:flex;gap:22px;flex-wrap:wrap;margin:12px 0}
 .checks label{display:flex;align-items:center;gap:8px}
 .checks input{width:auto;margin:0}
-.status{font-size:13px;color:#ccc;margin:12px 0}
-.hidden{display:none}
+.status{font-size:13px;color:#ccc;margin:12px 0;overflow-wrap:anywhere}
+.hidden{display:none!important}
 @media(max-width:480px){.grid{grid-template-columns:1fr}.wrap{margin:20px auto}}
 </style>
 </head>
 <body>
 <div class="wrap">
-<header>
-<img src="mlnpods-intro-logo.png" alt="Logo">
-<h1>ADMINISTRATION</h1>
-</header>
-
+<header><img src="mlnpods-intro-logo.png" alt="Logo"><h1>ADMINISTRATION</h1></header>
 <section id="login" class="panel">
 <h2>Connexion administrateur</h2>
 <form id="loginForm">
-<label>Adresse e-mail</label>
-<input id="email" type="email" placeholder="Ton adresse e-mail" required>
-<label>Mot de passe</label>
-<input id="password" type="password" placeholder="Ton mot de passe" required>
+<label for="email">Adresse e-mail</label>
+<input id="email" type="email" autocomplete="username" placeholder="Ton adresse e-mail" required>
+<label for="password">Mot de passe</label>
+<input id="password" type="password" autocomplete="current-password" placeholder="Ton mot de passe" required>
 <button type="submit" id="loginButton">Se connecter</button>
 </form>
-<p id="loginMessage" class="status"></p>
+<p id="loginMessage" class="status" role="status"></p>
 </section>
-
 <section id="dashboard" class="hidden">
-<div class="panel">
-<h2>Gestion des produits</h2>
+<div class="panel"><h2>Gestion des produits</h2>
 <p class="status">Modifie les prix, les promotions et les stocks, puis enregistre chaque produit.</p>
-<div class="actions">
-<button class="secondary" onclick="loadProducts()">Actualiser</button>
-<button class="secondary" onclick="logout()">Déconnexion</button>
-</div>
-<p id="message" class="status"></p>
-</div>
+<div class="actions"><button class="secondary" id="refreshButton" type="button">Actualiser</button><button class="secondary" id="logoutButton" type="button">Déconnexion</button></div>
+<p id="message" class="status" role="status"></p></div>
 <div id="products"></div>
 </section>
 </div>
-
-<script type="module">
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-const SUPABASE_URL = 'https://hnrnxyyijcxqczfpnsxu.supabase.co';
-const db = createClient(SUPABASE_URL, SUPABASE_KEY);
-const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-const $ = id => document.getElementById(id);
-
-function showMessage(id, message){
-  $(id).textContent = message;
-}
-
-function escapeHTML(value){
-  return String(value ?? '').replace(/[&<>"']/g, c => ({
-    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-  })[c]);
-}
-
-$('loginForm').addEventListener('submit', async event => {
-  event.preventDefault();
-  $('loginButton').disabled = true;
-  showMessage('loginMessage','Connexion en cours...');
-
-  const {error} = await db.auth.signInWithPassword({
-    email:$('email').value.trim(),
-    password:$('password').value
-  });
-
-  $('loginButton').disabled = false;
-
-  if(error){
-    showMessage('loginMessage','Erreur : '+error.message);
-    return;
-  }
-
-  $('login').classList.add('hidden');
-  $('dashboard').classList.remove('hidden');
-  await loadProducts();
-});
-
-async function checkSession(){
-  const {data} = await db.auth.getSession();
-  if(data.session){
-    $('login').classList.add('hidden');
-    $('dashboard').classList.remove('hidden');
-    await loadProducts();
-  }
-}
-
-function dateForInput(value){
-  if(!value) return '';
-  const d = new Date(value);
-  if(isNaN(d)) return '';
-  const local = new Date(d.getTime()-d.getTimezoneOffset()*60000);
-  return local.toISOString().slice(0,16);
-}
-
+<script>
+(function(){
+'use strict';
+const SUPABASE_URL='https://hnrnxyyijcxqczfpnsxu.supabase.co';
+const SUPABASE_KEY='sb_publishable_Q3toh3p4CUsL29ibGlBKbA_1xraZn4h';
+const $=id=>document.getElementById(id);
+let db=null;
+function show(id,msg){const el=$(id);if(el)el.textContent=msg||'';}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function dateForInput(value){if(!value)return '';const d=new Date(value);if(Number.isNaN(d.getTime()))return '';const local=new Date(d.getTime()-d.getTimezoneOffset()*60000);return local.toISOString().slice(0,16);}
+function setLoggedIn(on){$('login').classList.toggle('hidden',on);$('dashboard').classList.toggle('hidden',!on);}
 async function loadProducts(){
-  showMessage('message','Chargement des produits...');
-  const {data,error} = await db.from('products').select('*').order('name');
-
-  if(error){
-    showMessage('message','Impossible de charger les produits : '+error.message);
-    return;
-  }
-
-  if(!data || data.length===0){
-    $('products').innerHTML='<div class="panel">Aucun produit trouvé.</div>';
-    showMessage('message','');
-    return;
-  }
-
-  $('products').innerHTML=data.map(p=>`
-    <div class="product" data-id="${escapeHTML(p.id)}">
-      <h2>${escapeHTML(p.name)}</h2>
-      <div class="grid">
-        <div>
-          <label>Prix actuel (€)</label>
-          <input type="number" min="0" step="0.01" class="price" value="${p.price ?? 0}">
-        </div>
-        <div>
-          <label>Ancien prix (€)</label>
-          <input type="number" min="0" step="0.01" class="old-price" value="${p.old_price ?? ''}">
-        </div>
-        <div>
-          <label>Quantité en stock</label>
-          <input type="number" min="0" step="1" class="quantity" value="${p.stock_quantity ?? 0}">
-        </div>
-        <div>
-          <label>Date de réapprovisionnement</label>
-          <input type="datetime-local" class="restock" value="${dateForInput(p.restock_at)}">
-        </div>
-      </div>
-      <div class="checks">
-        <label><input type="checkbox" class="promo" ${p.promo_enabled?'checked':''}> Promotion activée</label>
-        <label><input type="checkbox" class="stock" ${p.in_stock?'checked':''}> En stock</label>
-      </div>
-      <button onclick="saveProduct(this)">Enregistrer</button>
-      <span class="status save-status"></span>
-    </div>
-  `).join('');
-
-  showMessage('message','Produits chargés.');
+ show('message','Chargement des produits...');
+ const {data,error}=await db.from('products').select('*').order('name');
+ if(error){show('message','Impossible de charger les produits : '+error.message);return;}
+ if(!data||!data.length){$('products').innerHTML='<div class="panel">Aucun produit trouvé.</div>';show('message','Aucun produit dans la table.');return;}
+ $('products').innerHTML=data.map(p=>`<div class="product" data-id="${esc(p.id)}">
+ <h2>${esc(p.name)}</h2><div class="grid">
+ <div><label>Prix actuel (€)</label><input type="number" min="0" step="0.01" class="price" value="${Number(p.price??0)}"></div>
+ <div><label>Ancien prix (€)</label><input type="number" min="0" step="0.01" class="old-price" value="${p.old_price??''}"></div>
+ <div><label>Quantité en stock</label><input type="number" min="0" step="1" class="quantity" value="${Number(p.stock_quantity??0)}"></div>
+ <div><label>Date de réapprovisionnement</label><input type="datetime-local" class="restock" value="${dateForInput(p.restock_at)}"></div>
+ </div><div class="checks">
+ <label><input type="checkbox" class="promo" ${p.promo_enabled?'checked':''}> Promotion activée</label>
+ <label><input type="checkbox" class="stock" ${p.in_stock?'checked':''}> En stock</label>
+ </div><button type="button" class="save-button">Enregistrer</button> <span class="status save-status" role="status"></span></div>`).join('');
+ show('message',data.length+' produit(s) chargé(s).');
 }
-
 async function saveProduct(button){
-  const card=button.closest('.product');
-  const id=card.dataset.id;
-  const price=Number(card.querySelector('.price').value);
-  const oldValue=card.querySelector('.old-price').value;
-  const quantity=Number(card.querySelector('.quantity').value);
-  const restockValue=card.querySelector('.restock').value;
-
-  if(!Number.isFinite(price) || price<0 || !Number.isInteger(quantity) || quantity<0){
-    card.querySelector('.save-status').textContent='Vérifie les prix et la quantité.';
-    return;
-  }
-
-  const restockDate=restockValue ? new Date(restockValue).toISOString() : null;
-
-  const changes={
-    price,
-    old_price:oldValue==='' ? null : Number(oldValue),
-    promo_enabled:card.querySelector('.promo').checked,
-    stock_quantity:quantity,
-    in_stock:card.querySelector('.stock').checked,
-    restock_at:restockDate,
-    updated_at:new Date().toISOString()
-  };
-
-  button.disabled=true;
-  card.querySelector('.save-status').textContent='Enregistrement...';
-
-  const {error}=await db.from('products').update(changes).eq('id',id);
-
-  button.disabled=false;
-  card.querySelector('.save-status').textContent=error
-    ? 'Erreur : '+error.message
-    : '✓ Enregistré !';
+ const card=button.closest('.product');const status=card.querySelector('.save-status');
+ const priceRaw=card.querySelector('.price').value;const oldRaw=card.querySelector('.old-price').value;const quantityRaw=card.querySelector('.quantity').value;
+ const price=Number(priceRaw);const quantity=Number(quantityRaw);const oldPrice=oldRaw===''?null:Number(oldRaw);
+ if(priceRaw===''||!Number.isFinite(price)||price<0||!Number.isInteger(quantity)||quantity<0||(oldPrice!==null&&(!Number.isFinite(oldPrice)||oldPrice<0))){status.textContent='Vérifie les prix et la quantité.';return;}
+ const restockRaw=card.querySelector('.restock').value;let restockAt=null;
+ if(restockRaw){const d=new Date(restockRaw);if(Number.isNaN(d.getTime())){status.textContent='Date de réapprovisionnement invalide.';return;}restockAt=d.toISOString();}
+ const changes={price,old_price:oldPrice,promo_enabled:card.querySelector('.promo').checked,stock_quantity:quantity,in_stock:card.querySelector('.stock').checked,restock_at:restockAt,updated_at:new Date().toISOString()};
+ button.disabled=true;status.textContent='Enregistrement...';
+ const {error}=await db.from('products').update(changes).eq('id',card.dataset.id);
+ button.disabled=false;status.textContent=error?'Erreur : '+error.message:'✓ Enregistré !';
 }
-
-async function logout(){
-  await db.auth.signOut();
-  $('dashboard').classList.add('hidden');
-  $('login').classList.remove('hidden');
-  $('password').value='';
-  showMessage('loginMessage','');
+async function login(event){event.preventDefault();const button=$('loginButton');button.disabled=true;show('loginMessage','Connexion en cours...');
+ try{const {data,error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;if(!data.session)throw new Error('Aucune session reçue.');setLoggedIn(true);await loadProducts();}
+ catch(e){show('loginMessage','Erreur : '+(e.message||'Connexion impossible.'));}
+ finally{button.disabled=false;}}
+async function logout(){try{await db.auth.signOut();}catch(e){console.error(e);}setLoggedIn(false);$('password').value='';show('loginMessage','Déconnecté.');}
+async function init(){
+ if(!window.supabase||typeof window.supabase.createClient!=='function'){show('loginMessage','La bibliothèque Supabase ne s’est pas chargée. Recharge la page ou réessaie plus tard.');return;}
+ db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+ $('loginForm').addEventListener('submit',login);
+ $('refreshButton').addEventListener('click',loadProducts);
+ $('logoutButton').addEventListener('click',logout);
+ $('products').addEventListener('click',e=>{const b=e.target.closest('.save-button');if(b)saveProduct(b);});
+ try{const {data,error}=await db.auth.getSession();if(error)throw error;if(data.session){setLoggedIn(true);await loadProducts();}}
+ catch(e){show('loginMessage','Erreur de session : '+e.message);}
 }
-
-checkSession();
+document.addEventListener('DOMContentLoaded',init);
+})();
 </script>
 </body>
 </html>
