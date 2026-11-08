@@ -28,6 +28,7 @@ button:disabled{opacity:.5;cursor:wait}
 .checks label{display:flex;align-items:center;gap:8px}
 .checks input{width:auto;margin:0}
 .status{font-size:13px;color:#ccc;margin:12px 0;overflow-wrap:anywhere}
+.order-card{background:#151515;border:1px solid #51451d;border-radius:14px;padding:16px;margin:12px 0}.order-card h3{color:var(--gold);margin:0 0 8px}.order-card pre{white-space:pre-wrap;overflow-wrap:anywhere;font:14px/1.5 Arial;color:#ddd}.order-meta{color:#aaa;font-size:12px}.order-status{width:100%;padding:12px;background:#090909;color:#fff;border:1px solid #444;border-radius:9px;margin:10px 0}.order-total{font-size:19px;color:var(--gold);font-weight:bold}
 .hidden{display:none!important}
 @media(max-width:480px){.grid{grid-template-columns:1fr}.wrap{margin:20px auto}}
 </style>
@@ -47,18 +48,25 @@ button:disabled{opacity:.5;cursor:wait}
 <p id="loginMessage" class="status" role="status"></p>
 </section>
 <section id="dashboard" class="hidden">
+<div class="panel"><h2>Menu administrateur</h2><div class="actions"><button type="button" id="showProducts">Produits</button><button type="button" class="secondary" id="showOrders">Commandes</button></div></div>
+<section id="ordersSection" class="hidden">
+ <div class="panel"><h2>Récapitulatif des commandes</h2><p class="status" id="ordersMessage">Les nouvelles commandes apparaîtront ici automatiquement.</p><div class="actions"><button type="button" id="refreshOrders">Actualiser les commandes</button></div></div>
+ <div id="ordersList"></div>
+</section>
+<div id="productsSection">
 <div class="panel"><h2>Gestion des produits</h2>
 <p class="status">Modifie les prix, les promotions et les stocks, puis enregistre chaque produit.</p>
 <div class="actions"><button class="secondary" id="refreshButton" type="button">Actualiser</button><button class="secondary" id="logoutButton" type="button">Déconnexion</button></div>
 <p id="message" class="status" role="status"></p></div>
 <div id="products"></div>
+</div>
 </section>
 </div>
 <script>
 (function(){
 'use strict';
-const SUPABASE_URL='https://fvighhpzcjzioyijtmzo.supabase.co';
-const SUPABASE_KEY='sb_publishable_4-7YlOeRwbtA9GTavIxLmQ_6nAuSryg';
+const SUPABASE_URL='https://hnrnxyyijcxqczfpnsxu.supabase.co';
+const SUPABASE_KEY='sb_publishable_Q3toh3p4CUsL29ibGlBKbA_1xraZn4h';
 const $=id=>document.getElementById(id);
 let db=null;
 function show(id,msg){const el=$(id);if(el)el.textContent=msg||'';}
@@ -99,13 +107,37 @@ async function login(event){event.preventDefault();const button=$('loginButton')
  catch(e){show('loginMessage','Erreur : '+(e.message||'Connexion impossible.'));}
  finally{button.disabled=false;}}
 async function logout(){try{await db.auth.signOut();}catch(e){console.error(e);}setLoggedIn(false);$('password').value='';show('loginMessage','Déconnecté.');}
+async function loadOrders(){
+ show('ordersMessage','Chargement des commandes...');
+ const {data,error}=await db.from('orders').select('*').order('created_at',{ascending:false});
+ if(error){show('ordersMessage','Impossible de charger les commandes : '+error.message);return;}
+ if(!data||!data.length){$('ordersList').innerHTML='<div class="panel">Aucune commande pour le moment.</div>';show('ordersMessage','0 commande.');return;}
+ $('ordersList').innerHTML=data.map(o=>{
+  const items=Array.isArray(o.items)?o.items:[];
+  const lines=items.map(i=>`${Number(i.quantity)||0} × ${esc(i.name)} — ${(Number(i.line_total)||0).toLocaleString('fr-FR')} €`).join('\n');
+  const date=o.created_at?new Date(o.created_at).toLocaleString('fr-FR'):'';
+  const total=o.total===null?'Sur devis':Number(o.total||0).toLocaleString('fr-FR')+' €';
+  return `<article class="order-card" data-order-id="${esc(o.id)}"><h3>Commande n°${esc(o.order_number??'—')}</h3><div class="order-meta">${esc(date)} · ${esc(o.delivery_mode||'Mode non précisé')}</div><pre>${lines}\n\nSous-total : ${Number(o.subtotal||0).toLocaleString('fr-FR')} €\nLivraison : ${o.delivery_fee===null?'Sur devis':Number(o.delivery_fee||0).toLocaleString('fr-FR')+' €'}\nTéléphone : ${esc(o.phone||'Non renseigné')}\nAdresse : ${esc(o.address||'Non renseignée')}\nE-mail : ${esc(o.email||'Non renseigné')}\nPaiement : ${esc(o.payment_method||'')}</pre><div class="order-total">Total : ${esc(total)}</div><label>Statut de la commande</label><select class="order-status"><option ${o.status==='En attente'?'selected':''}>En attente</option><option ${o.status==='Confirmée'?'selected':''}>Confirmée</option><option ${o.status==='En préparation'?'selected':''}>En préparation</option><option ${o.status==='Expédiée'?'selected':''}>Expédiée</option><option ${o.status==='Terminée'?'selected':''}>Terminée</option><option ${o.status==='Annulée'?'selected':''}>Annulée</option></select><button type="button" class="update-order">Enregistrer le statut</button><span class="status order-save-status"></span></article>`;
+ }).join('');
+ show('ordersMessage',data.length+' commande(s) enregistrée(s).');
+}
+async function updateOrder(button){
+ const card=button.closest('.order-card'),status=card.querySelector('.order-save-status');
+ button.disabled=true;status.textContent='Enregistrement...';
+ const {error}=await db.from('orders').update({status:card.querySelector('.order-status').value}).eq('id',card.dataset.orderId);
+ button.disabled=false;status.textContent=error?'Erreur : '+error.message:'✓ Statut mis à jour';
+}
 async function init(){
  if(!window.supabase||typeof window.supabase.createClient!=='function'){show('loginMessage','La bibliothèque Supabase ne s’est pas chargée. Recharge la page ou réessaie plus tard.');return;}
  db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
  $('loginForm').addEventListener('submit',login);
  $('refreshButton').addEventListener('click',loadProducts);
+ $('refreshOrders').addEventListener('click',loadOrders);
+ $('showProducts').addEventListener('click',()=>{$('productsSection').classList.remove('hidden');$('ordersSection').classList.add('hidden');$('showProducts').classList.remove('secondary');$('showOrders').classList.add('secondary');});
+ $('showOrders').addEventListener('click',async()=>{$('productsSection').classList.add('hidden');$('ordersSection').classList.remove('hidden');$('showOrders').classList.remove('secondary');$('showProducts').classList.add('secondary');await loadOrders();});
  $('logoutButton').addEventListener('click',logout);
  $('products').addEventListener('click',e=>{const b=e.target.closest('.save-button');if(b)saveProduct(b);});
+ $('ordersList').addEventListener('click',e=>{const b=e.target.closest('.update-order');if(b)updateOrder(b);});
  try{const {data,error}=await db.auth.getSession();if(error)throw error;if(data.session){setLoggedIn(true);await loadProducts();}}
  catch(e){show('loginMessage','Erreur de session : '+e.message);}
 }
