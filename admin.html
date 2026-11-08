@@ -90,7 +90,7 @@ main{width:100%;max-width:1600px;margin:0 auto;padding:29px clamp(15px,3vw,42px)
 @media(max-width:1100px){.product-row{grid-template-columns:72px minmax(120px,1fr) minmax(180px,1fr)}.product-actions{grid-column:2/-1}.checks-inline{grid-column:2/-1}}
 @media(max-width:700px){.product-row{grid-template-columns:62px minmax(0,1fr);gap:11px;padding:13px}.product-thumb{width:62px;height:62px}.product-name{align-self:center}.product-edit,.product-actions,.checks-inline,.stock-tools{grid-column:1/-1}.product-edit{display:grid;grid-template-columns:1fr 1fr}.product-actions{justify-content:space-between}.product-actions>div{width:110px}.checks-inline{padding-top:3px}.variant-grid{grid-template-columns:1fr 1fr}.restock-panel{align-items:flex-start}.restock-controls{width:100%}.restock-controls input{flex:1;min-width:0}.site-link{justify-content:center}.site-link span{display:inline}}
 
-</style>
+.promo-admin-form{display:grid;gap:14px;padding:16px 0;border-bottom:1px solid #333}.promo-admin-form label{display:grid;gap:7px;font-size:13px}.promo-admin-form input,.promo-admin-form select{padding:12px;border:1px solid #444;border-radius:10px;background:#111;color:#fff}.promo-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid #333;flex-wrap:wrap}.promo-row small{display:block;color:#aaa;margin-top:4px}.promo-row-actions{display:flex;gap:8px}</style>
 </head>
 <body>
 <section class="login-screen" id="login">
@@ -111,7 +111,7 @@ main{width:100%;max-width:1600px;margin:0 auto;padding:29px clamp(15px,3vw,42px)
    <button class="active" data-tab="overview"><span class="nav-ico">🏠</span><span class="nav-text">Vue d'ensemble</span></button>
    <button data-tab="orders"><span class="nav-ico">📦</span><span class="nav-text">Commandes</span></button>
    <button data-tab="products"><span class="nav-ico">🎧</span><span class="nav-text">Produits & stocks</span></button>
-   <button data-tab="sales"><span class="nav-ico">📈</span><span class="nav-text">Ventes & statistiques</span></button>
+   <button data-tab="sales"><span class="nav-ico">📈</span><span class="nav-text">Ventes & statistiques</span></button><button data-tab="promos"><span class="nav-ico">🎟️</span><span class="nav-text">Codes promo</span></button>
   </nav>
   <div class="side-foot"><a class="site-link" href="https://mlnpods25.fr/" target="_blank" rel="noopener">🌐 <span>Voir le site principal</span> <b>↗</b></a>ESPACE SÉCURISÉ<div class="admin"><div class="avatar">A</div><div class="admin-copy">Administrateur<br><span id="adminEmail">Compte connecté</span></div></div><button class="btn btn-quiet" id="logoutButton" style="width:100%;margin-top:13px">Déconnexion</button></div>
  </aside>
@@ -164,7 +164,7 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const dateFmt=v=>v?new Date(v).toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'}):'Date inconnue';
 const isCancelled=o=>String(o.status||'').toLowerCase().includes('annul');
 function setMessage(id,msg){const el=$(id);if(el)el.textContent=msg||'';}
-function go(tab){document.querySelectorAll('.section').forEach(s=>s.classList.toggle('active',s.id===tab));document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));const names={overview:["Vue d'ensemble","Retrouve l'essentiel de ta boutique en un coup d'œil."],orders:["Commandes","Consulte les commandes et suis leur avancement."],products:["Produits & stocks","Gère les prix, les promotions et les quantités disponibles."],sales:["Ventes & statistiques","Analyse ton chiffre d'affaires sur différentes périodes."]};$('pageTitle').textContent=names[tab][0];$('pageSubtitle').textContent=names[tab][1];if(tab==='sales')renderSales();}
+function go(tab){document.querySelectorAll('.section').forEach(s=>s.classList.toggle('active',s.id===tab));document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));const names={overview:["Vue d'ensemble","Retrouve l'essentiel de ta boutique en un coup d'œil."],orders:["Commandes","Consulte les commandes et suis leur avancement."],products:["Produits & stocks","Gère les prix, les promotions et les quantités disponibles."],sales:["Ventes & statistiques","Analyse ton chiffre d'affaires sur différentes périodes."],promos:["Codes promo","Crée et gère les réductions de ta boutique."]};$('pageTitle').textContent=names[tab][0];$('pageSubtitle').textContent=names[tab][1];if(tab==='sales')renderSales();}
 function setLogged(on){$('login').classList.toggle('hidden',on);$('app').classList.toggle('hidden',!on);}
 async function loadProducts(){
  setMessage('productsMessage','Chargement des produits et variantes…');
@@ -181,6 +181,30 @@ async function loadProducts(){
  else setMessage('productsMessage',products.length+' produits · '+variants.length+' variantes chargés.');
  renderOverview();
 }
+
+let promoCodes=[];
+async function loadPromos(){
+ const {data,error}=await db.from('promo_codes').select('*').order('created_at',{ascending:false});
+ if(error){$('promoList').innerHTML='<div class="empty">Erreur : '+esc(error.message)+'</div>';setMessage('promoAdminMessage','Crée la table promo_codes avec le SQL fourni.');return;}
+ promoCodes=data||[];
+ $('promoList').innerHTML=promoCodes.length?promoCodes.map(p=>`<div class="promo-row" data-promo-id="${esc(p.id)}"><div><strong>🎟️ ${esc(p.code)}</strong><small>${p.discount_type==='percent'?esc(p.discount_value)+' %':euro(p.discount_value)} · Minimum ${euro(p.min_subtotal||0)} · Utilisations ${Number(p.uses_count||0)}${p.max_uses===null?'':' / '+p.max_uses}</small><small>${p.active?'Actif':'Désactivé'}${p.expires_at?' · Expire le '+dateFmt(p.expires_at):''}</small></div><div class="promo-row-actions"><button class="btn btn-dark promo-toggle">${p.active?'Désactiver':'Activer'}</button><button class="btn btn-dark promo-delete">Supprimer</button></div></div>`).join(''):'<div class="empty">Aucun code promo.</div>';
+ setMessage('promoAdminMessage',promoCodes.length+' code(s) promo.');
+}
+async function createPromo(e){
+ e.preventDefault();const code=$('promoAdminCode').value.trim().toUpperCase().replace(/\s+/g,''),type=$('promoAdminType').value,value=Number($('promoAdminValue').value),min=Number($('promoAdminMin').value||0),maxRaw=$('promoAdminMax').value;
+ if(!/^[A-Z0-9_-]{3,32}$/.test(code)||!Number.isFinite(value)||value<=0||min<0||(type==='percent'&&value>100)){setMessage('promoAdminMessage','Vérifie les valeurs saisies.');return;}
+ const payload={code,discount_type:type,discount_value:value,min_subtotal:min,max_uses:maxRaw?Number(maxRaw):null,uses_count:0,expires_at:$('promoAdminExpiry').value?new Date($('promoAdminExpiry').value).toISOString():null,active:$('promoAdminActive').checked};
+ const b=$('savePromo');b.disabled=true;const {error}=await db.from('promo_codes').insert(payload);b.disabled=false;
+ if(error){setMessage('promoAdminMessage','Erreur : '+error.message);return;}
+ $('promoForm').reset();$('promoAdminActive').checked=true;$('promoAdminMin').value='0';setMessage('promoAdminMessage','Code créé.');await loadPromos();
+}
+async function promoAction(e){
+ const b=e.target.closest('button');if(!b)return;const row=b.closest('[data-promo-id]');if(!row)return;const p=promoCodes.find(x=>String(x.id)===row.dataset.promoId);if(!p)return;let result;
+ if(b.classList.contains('promo-toggle'))result=await db.from('promo_codes').update({active:!p.active}).eq('id',p.id);
+ else if(b.classList.contains('promo-delete')){if(!confirm('Supprimer '+p.code+' ?'))return;result=await db.from('promo_codes').delete().eq('id',p.id);}
+ if(result?.error){setMessage('promoAdminMessage','Erreur : '+result.error.message);return;}await loadPromos();
+}
+
 function productImageKey(p){
  const n=String(p.name||'').toLowerCase();
  if(n.includes('max'))return 'airpods-max';
@@ -330,7 +354,7 @@ function exportCsv(){
  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='mlnpods-commandes-'+new Date().toISOString().slice(0,10)+'.csv';a.click();URL.revokeObjectURL(url);
 }
 function exportPdf(){go('orders');window.print();}
-async function refreshAll(){await Promise.all([loadProducts(),loadOrders()]);}
+async function refreshAll(){await Promise.all([loadProducts(),loadOrders(),loadPromos()]);}
 async function login(event){
  event.preventDefault();const b=$('loginButton');b.disabled=true;setMessage('loginMessage','Connexion en cours…');
  try{const {data,error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;if(!data.session)throw new Error('Aucune session reçue.');$('adminEmail').textContent=$('email').value.trim();setLogged(true);await refreshAll();}
@@ -342,7 +366,7 @@ async function init(){
  if(!window.supabase?.createClient){setMessage('loginMessage','Supabase ne s’est pas chargé. Vérifie ta connexion puis recharge.');return;}
  db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
  $('loginForm').addEventListener('submit',login);$('logoutButton').addEventListener('click',logout);
- $('refreshAll').addEventListener('click',refreshAll);$('refreshProducts').addEventListener('click',loadProducts);
+ $('refreshAll').addEventListener('click',refreshAll);$('refreshProducts').addEventListener('click',loadProducts);$('refreshPromos')?.addEventListener('click',loadPromos);$('promoForm')?.addEventListener('submit',createPromo);$('promoList')?.addEventListener('click',promoAction);
  $('quickProducts').addEventListener('click',()=>go('products'));
  document.querySelectorAll('.nav button').forEach(b=>b.addEventListener('click',()=>go(b.dataset.tab)));
  document.querySelectorAll('[data-goto]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.goto)));

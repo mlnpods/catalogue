@@ -24,10 +24,36 @@
  }
  function readCart(){try{return migrateCart(JSON.parse(localStorage.getItem(CART_KEY)||'{}'));}catch(e){return {};}}
  let cart=readCart();
+  let appliedPromo=null, promoMessage='';
  function save(){localStorage.setItem(CART_KEY,JSON.stringify(cart));savedOrder=null;render();}
  function entries(){return Object.entries(cart).filter(([,it])=>Number(it.quantity)>0);}
  function subtotal(){return entries().reduce((sum,[,it])=>sum+Number(it.price||0)*Number(it.quantity),0);}
  function count(){return entries().reduce((sum,[,it])=>sum+Number(it.quantity),0);}
+  function promoDiscount(sub=subtotal()){if(!appliedPromo)return 0;const v=Number(appliedPromo.discount_value||0);return Math.min(sub,appliedPromo.discount_type==='percent'?sub*v/100:v);}
+  function payableSubtotal(){return Math.max(0,subtotal()-promoDiscount());}
+  async function applyPromo(){
+   const input=$('promoCodeInput'),status=$('promoCodeMessage'),button=$('applyPromoCode');
+   const code=String(input?.value||'').trim().toUpperCase();
+   if(!code){if(status)status.textContent='Saisis un code promo.';return;}
+   if(button)button.disabled=true;
+   try{
+    if(!db)throw new Error('Service indisponible. Réessaie plus tard.');
+    const {data,error}=await db.from('promo_codes').select('id,code,discount_type,discount_value,min_subtotal,max_uses,uses_count,starts_at,expires_at,active').eq('code',code).eq('active',true).maybeSingle();
+    if(error)throw error;
+    if(!data)throw new Error('Code promo invalide ou désactivé.');
+    const now=Date.now(),sub=subtotal();
+    if(data.starts_at&&new Date(data.starts_at).getTime()>now)throw new Error('Ce code promo n’est pas encore valable.');
+    if(data.expires_at&&new Date(data.expires_at).getTime()<now)throw new Error('Ce code promo a expiré.');
+    if(data.max_uses!==null&&Number(data.uses_count)>=Number(data.max_uses))throw new Error('Ce code promo a atteint sa limite d’utilisation.');
+    if(sub<Number(data.min_subtotal||0))throw new Error('Montant minimum requis : '+money(data.min_subtotal)+'.');
+    if(!['percent','fixed'].includes(data.discount_type)||Number(data.discount_value)<=0)throw new Error('Code promo mal configuré.');
+    appliedPromo=data;promoMessage='Code '+code+' appliqué : −'+money(promoDiscount())+'.';
+    if(status)status.textContent=promoMessage;
+    render();
+   }catch(e){appliedPromo=null;promoMessage='';if(status)status.textContent=e.message||'Impossible de vérifier ce code.';render();}
+   finally{if(button)button.disabled=false;}
+  }
+  function removePromo(){appliedPromo=null;promoMessage='';if($('promoCodeInput'))$('promoCodeInput').value='';if($('promoCodeMessage'))$('promoCodeMessage').textContent='Code promo retiré.';render();}
  function available(item){if(item.variant_id)return Number(variants[item.variant_id]?.stock_quantity||0);const p=products[item.product_id];return p&&p.in_stock===false?0:Number(p?.stock_quantity||0);}
  function stockLabel(item){const n=available(item);return n>0?`${n} en stock`:'Rupture de stock';}
  async function loadStock(){
@@ -65,10 +91,13 @@
   }).join(''):'<p class="notice mln-empty">Ton panier est vide pour le moment.</p>';}
   const sub=$('cartSubtotal');if(sub)sub.textContent=money(subtotal());
   if($('cartSubtotalCheckout'))$('cartSubtotalCheckout').textContent=money(subtotal());
+   if($('checkoutPromoDiscount'))$('checkoutPromoDiscount').textContent=appliedPromo?'−'+money(promoDiscount()):money(0);
+   if($('checkoutGrandTotal'))$('checkoutGrandTotal').textContent=currentFee===null?'—':money(payableSubtotal()+currentFee);
+   if($('promoCodeMessage')&&appliedPromo)$('promoCodeMessage').textContent='Code '+appliedPromo.code+' appliqué : −'+money(promoDiscount())+'.';
   const currentMode=$('deliveryMode')?.value;
   const currentFee=currentMode?deliveryFee(currentMode,subtotal()):null;
   if($('checkoutDeliveryFee'))$('checkoutDeliveryFee').textContent=currentFee===null?'À choisir':money(currentFee);
-  if($('checkoutGrandTotal'))$('checkoutGrandTotal').textContent=currentFee===null?'—':money(subtotal()+currentFee);
+  if($('checkoutGrandTotal'))$('checkoutGrandTotal').textContent=currentFee===null?'—':money(payableSubtotal()+currentFee);
   const start=$('checkoutStart');if(start)start.disabled=!entries().length;
   const productStart=$('mlnCheckout');if(productStart)productStart.disabled=!entries().length;
   document.querySelectorAll('[data-product-variant],[data-home-variant]').forEach(btn=>{
@@ -123,7 +152,7 @@
   const mode=$('deliveryMode')?.value,sub=subtotal(),fee=deliveryFee(mode,sub);
   const first=$('customerFirstName')?.value.trim()||'',last=$('customerLastName')?.value.trim()||'';
   const client=[first,last].filter(Boolean).join(' ')||'Non renseigné';
-  const lines=['🎧 NOUVELLE COMMANDE — MLNPODS','',`👤 Client : ${client}`,'', '🛍️ PRODUITS',...entries().map(([,it])=>`• ${it.quantity} × ${it.name} — ${money(it.price)} / unité = ${money(it.price*it.quantity)}`),'',`🧾 Sous-total : ${money(sub)}`,`🚚 Livraison : ${deliveryLabel(mode)} — ${money(fee)}`,`💶 TOTAL : ${money(sub+fee)}`,'',`📞 Téléphone : ${$('customerPhone')?.value.trim()||''}`];
+  const lines=['🎧 NOUVELLE COMMANDE — MLNPODS','',`👤 Client : ${client}`,'', '🛍️ PRODUITS',...entries().map(([,it])=>`• ${it.quantity} × ${it.name} — ${money(it.price)} / unité = ${money(it.price*it.quantity)}`),'',`🧾 Sous-total : ${money(sub)}`,...(appliedPromo?[`🎟️ Code promo : ${appliedPromo.code}`,`💸 Réduction : −${money(promoDiscount(sub))}`]:[]),`🚚 Livraison : ${deliveryLabel(mode)} — ${money(fee)}`,`💶 TOTAL : ${money(payableSubtotal()+fee)}`,'',`📞 Téléphone : ${$('customerPhone')?.value.trim()||''}`];
   const a=addressValue(mode);if(a)lines.push(mode==='relay'?'📦 Point relais : '+a:'🏠 Adresse / retrait : '+a);
   if($('customerEmail')?.value.trim())lines.push('✉️ E-mail : '+$('customerEmail').value.trim());
   if($('customerSnapchat')?.value.trim())lines.push('👻 Snapchat : '+$('customerSnapchat').value.trim());
@@ -164,7 +193,7 @@
    const order=await placeOrder();
    const text=summary(order);$('orderSummary').value=text;
    // La commande est enregistrée et le message WhatsApp préparé : vider le panier maintenant.
-   cart={};localStorage.removeItem(CART_KEY);savedOrder=null;render();
+   cart={};localStorage.removeItem(CART_KEY);savedOrder=null;appliedPromo=null;render();
    $('cartOverlay')?.classList.remove('open');
    $('checkoutForm').hidden=true;
    sessionStorage.setItem('mlnpods_return_home_after_whatsapp','1');
@@ -217,7 +246,8 @@
    const sub=subtotal(),mode=$('deliveryMode')?.value,fee=mode?deliveryFee(mode,sub):null;
    if($('cartSubtotalCheckout'))$('cartSubtotalCheckout').textContent=money(sub);
    if($('checkoutDeliveryFee'))$('checkoutDeliveryFee').textContent=fee===null?'À choisir':money(fee);
-   if($('checkoutGrandTotal'))$('checkoutGrandTotal').textContent=fee===null?'—':money(sub+fee);
+   if($('checkoutPromoDiscount'))$('checkoutPromoDiscount').textContent=appliedPromo?'−'+money(promoDiscount()):money(0);
+    if($('checkoutGrandTotal'))$('checkoutGrandTotal').textContent=fee===null?'—':money(payableSubtotal()+fee);
   }
   document.querySelectorAll('[data-delivery-mode]').forEach(btn=>btn.addEventListener('click',()=>{
    const mode=btn.dataset.deliveryMode;$('deliveryMode').value=mode;

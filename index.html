@@ -370,7 +370,7 @@ header{height:92px!important;position:sticky;top:0;z-index:100;background:#05050
 .send-wa{background:#20c765;color:#062b16}.send-snap{background:#ffdf00;color:#111}
 @media(max-width:650px){.nav{grid-template-columns:1fr auto 1fr!important}.header-control{width:42px;height:42px}.header-logo img{width:64px!important;height:64px!important}.add-cart{font-size:12px;padding:10px 6px}}
 
-</style>
+.mln-promo-box{margin:14px 0;padding:14px;border:1px solid #6d5811;border-radius:14px;background:#111}.mln-promo-box>label{display:block;font-weight:800;margin-bottom:9px}.mln-promo-entry{display:flex;gap:7px}.mln-promo-entry input{min-width:0;flex:1;padding:12px;border:1px solid #62542d;border-radius:9px;background:#080808;color:#fff;text-transform:uppercase}.mln-promo-entry button{border:0;border-radius:9px;padding:0 13px;background:#d6ad32;color:#111;font-weight:900}.mln-promo-entry #removePromoCode{background:#292929;color:#fff}.mln-promo-message{font-size:12px;color:#d9c37f;margin:8px 0 0;min-height:16px}</style>
 <link as="image" href="mlnpods-intro-logo.png" id="mlnpods-splash-preload" rel="preload"/>
 
 <style id="mln-whatsapp-checkout-style">
@@ -522,8 +522,14 @@ header{height:92px!important;position:sticky;top:0;z-index:100;background:#05050
     <span class="mln-step">ÉTAPE 3 · CONFIRMATION</span>
     <h2>🧾 Récapitulatif</h2>
   </div>
+  <div class="mln-promo-box">
+   <label for="promoCodeInput">🎟️ Tu as un code promo ?</label>
+   <div class="mln-promo-entry"><input id="promoCodeInput" type="text" maxlength="32" placeholder="Saisis ton code promo" autocomplete="off"><button type="button" id="applyPromoCode">Appliquer</button><button type="button" id="removePromoCode" aria-label="Retirer le code promo">✕</button></div>
+   <p id="promoCodeMessage" class="mln-promo-message" aria-live="polite"></p>
+  </div>
   <div class="mln-price-recap">
     <div><span>Sous-total produits</span><strong id="cartSubtotalCheckout">0 €</strong></div>
+    <div><span>Réduction code promo</span><strong id="checkoutPromoDiscount">0 €</strong></div>
     <div><span>Frais de livraison</span><strong id="checkoutDeliveryFee">À choisir</strong></div>
     <div class="mln-grand-total"><span>Total à régler</span><strong id="checkoutGrandTotal">—</strong></div>
   </div>
