@@ -2,8 +2,8 @@
 (() => {
  'use strict';
  const CART_KEY='mlnpods_cart_v1';
- const SUPABASE_URL='https://hnrnxyyijcxqczfpnsxu.supabase.co';
- const SUPABASE_KEY='sb_publishable_Q3toh3p4CUsL29ibGlBKbA_1xraZn4h';
+ const SUPABASE_URL='https://fvighhpzcjzioyijtmzo.supabase.co';
+ const SUPABASE_KEY='sb_publishable_4-7YlOeRwbtA9GTavIxLmQ_6nAuSryg';
  const WHATSAPP='33780842264';
  const SNAPCHAT='https://www.snapchat.com/add/shopmaillot25';
  const $=id=>document.getElementById(id);
@@ -43,10 +43,7 @@
    localStorage.setItem(CART_KEY,JSON.stringify(cart));render();
   }catch(e){console.error('MlnPods stocks:',e);stockReady=false;}
  }
- function productImage(card){
-  const img=card?.querySelector('.gallery img')||card?.querySelector('img.product-photo')||card?.querySelector('img');
-  return img?.currentSrc||img?.getAttribute('src')||'';
-}
+ function productImage(card){const img=card?.querySelector('img.product-photo')||card?.querySelector('.gallery img')||card?.querySelector('img');return img?.getAttribute('src')||'';}
  function getCurrentProduct(){const body=document.body;const id=body.dataset.productId||'';const variant=body.dataset.variantId||$('mlnVariantSelect')?.value||null;const name=body.dataset.product||'';const price=Number(body.dataset.price||0);return {product_id:id,variant_id:variant,name:variant?(variant==='airpods-max-noir'?'AirPods Max - Noir':( $('mlnVariantSelect')?.selectedOptions[0]?.textContent||name)):name,price,image:productImage(document.querySelector('main'))};}
  function addItem(item,qty){
   if(!stockReady){alert('Les stocks ne sont pas disponibles pour le moment. Actualise la page et réessaie.');return false;}
@@ -59,7 +56,7 @@
   const countEl=$('cartCount');if(countEl)countEl.textContent=count();
   const box=$('cartItems');if(box){const rows=entries();box.innerHTML=rows.length?rows.map(([sku,it])=>{
    const max=available(it),q=Number(it.quantity);
-   return `<div class="cart-line mln-cart-line"><img src="${esc(it.image||'')}" alt="${esc(it.name)}" style="width:64px;height:64px;object-fit:cover;border-radius:10px;background:#171717" onerror="this.style.display='none'"><div><strong>${esc(it.name)}</strong><small>${money(it.price)} / unité · ${esc(stockLabel(it))}</small><div class="qty-controls mln-qty-controls"><button type="button" data-cart-minus="${esc(sku)}" aria-label="Diminuer">−</button><span>${q}</span><button type="button" data-cart-plus="${esc(sku)}" aria-label="Augmenter" ${q>=max?'disabled':''}>+</button><button type="button" data-cart-remove="${esc(sku)}">Supprimer</button></div></div><strong>${money(Number(it.price||0)*q)}</strong></div>`;
+   return `<div class="cart-line mln-cart-line"><img src="${esc(it.image||'')}" alt="" style="width:58px;height:58px;object-fit:cover;border-radius:9px;background:#171717" onerror="this.style.display='none'"><div><strong>${esc(it.name)}</strong><small>${money(it.price)} / unité · ${esc(stockLabel(it))}</small><div class="qty-controls mln-qty-controls"><button type="button" data-cart-minus="${esc(sku)}" aria-label="Diminuer">−</button><span>${q}</span><button type="button" data-cart-plus="${esc(sku)}" aria-label="Augmenter" ${q>=max?'disabled':''}>+</button><button type="button" data-cart-remove="${esc(sku)}">Supprimer</button></div></div><strong>${money(Number(it.price||0)*q)}</strong></div>`;
   }).join(''):'<p class="notice mln-empty">Ton panier est vide pour le moment.</p>';}
   const sub=$('cartSubtotal');if(sub)sub.textContent=money(subtotal());
   const start=$('checkoutStart');if(start)start.disabled=!entries().length;
@@ -67,25 +64,18 @@
   const status=$('mlnVariantStock');
   if(status){
    const id=document.body.dataset.variantId||$('mlnVariantSelect')?.value;
-   if(id){
-    const v=variants[id], n=v?Number(v.stock_quantity||0):0;
-    status.textContent=v?(n>0?`✓ ${n} disponible(s)`:'✕ Rupture de stock'):'Stock indisponible — actualise la page';
-    status.style.color=v&&n>0?'#72d69a':'#ff8b8b';
-   } else {
-    const p=products[document.body.dataset.productId], n=p?Number(p.stock_quantity||0):0;
-    status.textContent=p?(n>0?`✓ ${n} disponible(s)`:'✕ Rupture de stock'):'Stock indisponible — actualise la page';
-    status.style.color=p&&n>0?'#72d69a':'#ff8b8b';
-   }
+   const v=id?variants[id]:null;
+   const n=v?Number(v.stock_quantity||0):null;
+   status.textContent=id?(v?(n>0?`✓ ${n} disponible(s)`:'✕ Rupture de stock'):'Stock indisponible — actualise la page'):'';
+   status.style.color=n>0?'#72d69a':'#ff8b8b';
   }
   const add=$('mlnAddToCart');
   if(add && document.body.dataset.productId){
    const id=document.body.dataset.variantId||$('mlnVariantSelect')?.value;
    const v=id?variants[id]:null;
-   const p=products[document.body.dataset.productId];
-   const stock=id?Number(v?.stock_quantity||0):Number(p?.stock_quantity||0);
-   add.disabled=!stockReady||stock<=0;
-   if(add.disabled)add.textContent=stockReady?'Rupture de stock':'Chargement du stock…';
-   else add.textContent=`🛒 Ajouter au panier — ${money(p?.price||document.body.dataset.price||0)}`;
+   add.disabled=!!id&&(!v||Number(v.stock_quantity||0)<=0);
+   if(add.disabled)add.textContent='Rupture de stock';
+   else if(document.body.dataset.product==='AirPods')add.textContent='🛒 Ajouter au panier — 30 €';
   }
  }
  function deliveryFee(mode,sub){if(mode==='besancon')return sub>=30?0:5;if(mode==='saint-claude')return 0;if(mode==='relay')return 5;if(mode==='home')return 10;return 0;}
