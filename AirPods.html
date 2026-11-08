@@ -362,9 +362,16 @@ header.mln-header{position:sticky;top:0;z-index:100;background:#050505ee;backdro
     } catch (_) { return {}; }
   }
   let cart = readCart();
+  // Migration des anciennes images déjà enregistrées dans le panier.
+  // Toute ligne AirPods reprend désormais la photo officielle commune.
   Object.keys(cart).forEach(key => {
-    if (key.startsWith('airpods:') && cart[key]) cart[key].image = AIRPODS_IMAGE;
+    const item = cart[key];
+    if (item && (key.toLowerCase().startsWith('airpods') ||
+        /^airpods(?:\s|$)/i.test(String(item.name || '')))) {
+      item.image = AIRPODS_IMAGE;
+    }
   });
+  try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch (_) {}
 
   function entries() {
     return Object.entries(cart).filter(([, item]) =>
@@ -388,7 +395,7 @@ header.mln-header{position:sticky;top:0;z-index:100;background:#050505ee;backdro
     subtotal.textContent = money(total());
     cartItems.innerHTML = entries().length ? entries().map(([key, item]) => `
       <div class="mln-cart-line">
-        <img class="mln-cart-thumb" src="${item.image || AIRPODS_IMAGE}" alt="${item.name}" loading="lazy">
+        <img class="mln-cart-thumb" src="${(/^AirPods(?:\s|$)/i.test(String(item.name || '')) || key.toLowerCase().startsWith('airpods')) ? AIRPODS_IMAGE : (item.image || AIRPODS_IMAGE)}" alt="${item.name}" loading="lazy">
         <div class="mln-line-content">
           <strong>${item.name}</strong>
           <small>${money(item.price)} / unité</small>
