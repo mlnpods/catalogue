@@ -2,7 +2,7 @@
 (function(){
  'use strict';
  const URL='https://hnrnxyyijcxqczfpnsxu.supabase.co';
- const KEY='sb_publishable_Q3toh3p4CUsL29ibGlBKbA_1xraZn4h';
+ const KEY='sb_publishable_4-7YlOeRwbtA9GTavIxLmQ_6nAuSryg';
  const headers={'apikey':KEY,'Content-Type':'application/json'};
  async function request(path,opts={}){
   const response=await fetch(URL+'/rest/v1/'+path,{...opts,headers:{...headers,...(opts.headers||{})}});
