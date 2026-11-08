@@ -151,7 +151,7 @@
   const mode=$('deliveryMode')?.value,sub=subtotal(),fee=deliveryFee(mode,sub);
   const first=$('customerFirstName')?.value.trim()||'',last=$('customerLastName')?.value.trim()||'';
   const client=[first,last].filter(Boolean).join(' ')||'Non renseigné';
-  const lines=['🎧 NOUVELLE COMMANDE — MLNPODS','',`👤 Client : ${client}`,'', '🛍️ PRODUITS',...entries().map(([,it])=>`• ${it.quantity} × ${it.name} — ${money(it.price)} / unité = ${money(it.price*it.quantity)}`),'',`🧾 Sous-total : ${money(sub)}`,...(appliedPromo?[`🎟️ Code promo : ${appliedPromo.code}`,`💸 Réduction : −${money(promoDiscount(sub))}`]:[]),`🚚 Livraison : ${deliveryLabel(mode)} — ${money(fee)}`,`💶 TOTAL : ${money(payableSubtotal()+fee)}`,'',`📞 Téléphone : ${$('customerPhone')?.value.trim()||''}`];
+  const actualDiscount=Number(order?.discount_amount??(appliedPromo?promoDiscount(sub):0));const actualTotal=Number(order?.total??(Math.max(0,sub-actualDiscount)+fee));const actualCode=order?.promo_code||appliedPromo?.code||null;const lines=['🎧 NOUVELLE COMMANDE — MLNPODS','',`👤 Client : ${client}`,'', '🛍️ PRODUITS',...entries().map(([,it])=>`• ${it.quantity} × ${it.name} — ${money(it.price)} / unité = ${money(it.price*it.quantity)}`),'',`🧾 Sous-total : ${money(sub)}`,...(actualCode?[`🎟️ Code promo : ${actualCode}`,`💸 Réduction : −${money(actualDiscount)}`]:[]),`🚚 Livraison : ${deliveryLabel(mode)} — ${money(Number(order?.delivery_fee??fee))}`,`💶 TOTAL : ${money(actualTotal)}`,'',`📞 Téléphone : ${$('customerPhone')?.value.trim()||''}`];
   const a=addressValue(mode);if(a)lines.push(mode==='relay'?'📦 Point relais : '+a:'🏠 Adresse / retrait : '+a);
   if($('customerEmail')?.value.trim())lines.push('✉️ E-mail : '+$('customerEmail').value.trim());
   if($('customerSnapchat')?.value.trim())lines.push('👻 Snapchat : '+$('customerSnapchat').value.trim());
@@ -178,7 +178,7 @@
   if(!db)throw new Error('Connexion à la base de commandes indisponible.');
   const mode=$('deliveryMode').value;
   const payload=entries().map(([,it])=>({product_id:it.product_id,variant_id:it.variant_id||null,quantity:Number(it.quantity)}));
-  const {data,error}=await db.rpc('mlnpods_place_order',{p_items:payload,p_delivery_code:mode,p_address:[[$('customerFirstName')?.value.trim(),$('customerLastName')?.value.trim()].filter(Boolean).join(' '),addressValue(mode)].filter(Boolean).join(' — '),p_phone:$('customerPhone').value.trim(),p_email:$('customerEmail').value.trim()||null});
+  const {data,error}=await db.rpc('mlnpods_place_order',{p_items:payload,p_delivery_code:mode,p_address:[[$('customerFirstName')?.value.trim(),$('customerLastName')?.value.trim()].filter(Boolean).join(' '),addressValue(mode)].filter(Boolean).join(' — '),p_phone:$('customerPhone').value.trim(),p_email:$('customerEmail').value.trim()||null,p_promo_code:appliedPromo?.code||null});
   if(error)throw new Error(error.message||'La commande n’a pas pu être enregistrée.');
   if(!data?.success)throw new Error(data?.message||'La commande n’a pas pu être enregistrée.');
   savedOrder=data;
