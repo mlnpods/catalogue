@@ -65,9 +65,10 @@ button:disabled{opacity:.5}
 </section>
 </div>
 
-<script>
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const SUPABASE_URL = 'https://hnrnxyyijcxqczfpnsxu.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_Q3toh3p4CUsL29ibGlBKbA_1xraZn4h;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const $ = id => document.getElementById(id);
