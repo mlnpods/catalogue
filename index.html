@@ -401,14 +401,20 @@ header{height:92px!important;position:sticky;top:0;z-index:100;background:#05050
    <label for="deliveryMode">Mode de livraison</label>
    <select id="deliveryMode" required>
     <option value="">Choisir une option</option>
-    <option value="besancon">Livraison sur Besançon — Gratuit</option>
-    <option value="place">Remise en main propre sur place — Gratuit</option>
-    <option value="france">Envoi en France — 5 €</option>
-    <option value="other">Autre / proximité de Besançon — Sur devis</option>
+    <option value="besancon">🚗 Livraison à Besançon — gratuite dès 30 €, sinon 5 €</option>
+    <option value="saint-claude">📍 Retrait secteur Saint-Claude — Gratuit</option>
+    <option value="relay">📦 Mondial Relay — 5 €</option>
+    <option value="home">🏠 Livraison à domicile — 10 €</option>
    </select>
    <div id="addressGroup" hidden>
-    <label for="customerAddress">Adresse exacte / complète</label>
-    <textarea id="customerAddress" rows="3"></textarea>
+    <label for="customerAddress">Adresse complète (numéro, rue, complément, code postal et ville)</label>
+    <textarea id="customerAddress" rows="3" placeholder="Ex. 12 rue des Fleurs, 25000 Besançon"></textarea>
+   </div>
+   <div id="relayGroup" hidden>
+    <p class="notice">📦 Choisis ton point relais sur le site public Mondial Relay, sans créer de compte, puis recopie ses coordonnées ci-dessous.</p>
+    <p><a href="https://www.mondialrelay.fr/trouver-le-point-relais-le-plus-proche/" target="_blank" rel="noopener" style="color:#ffd21c;font-weight:800">🔎 Trouver un point relais Mondial Relay</a></p>
+    <label for="relayName">Nom du point relais</label><input id="relayName" type="text" placeholder="Nom du commerce">
+    <label for="relayAddress">Adresse du point relais</label><textarea id="relayAddress" rows="2" placeholder="Adresse, code postal et ville"></textarea>
    </div>
    <div id="phoneGroup" hidden>
     <label for="customerPhone">Numéro de téléphone</label>
@@ -418,7 +424,8 @@ header{height:92px!important;position:sticky;top:0;z-index:100;background:#05050
     <label for="customerEmail">Adresse e-mail</label>
     <input id="customerEmail" type="email" autocomplete="email">
    </div>
-   <p class="notice">Aucun paiement n'est à effectuer sur le site. Paiement uniquement en espèces lors de la remise des articles. Pour les livraisons sur devis, le tarif sera confirmé avant validation.</p>
+   <p class="notice">💳 Aucun paiement sur le site. Les modalités de paiement seront confirmées avant l’envoi ou la remise.</p>
+   <label style="display:flex;gap:10px;align-items:flex-start;margin:14px 0"><input id="acceptConditions" type="checkbox" required style="width:auto;margin-top:4px"> J’accepte les conditions de commande et les frais de livraison affichés.</label>
    <p class="notice"><strong>Important :</strong> copie le récapitulatif et envoie-le sur WhatsApp ou Snapchat pour confirmer ta commande. Réponse plus rapide sur WhatsApp !</p>
    <div class="send-options">
     <button class="send-wa" type="button" id="sendWhatsApp">WhatsApp</button>
@@ -616,8 +623,8 @@ header{height:92px!important;position:sticky;top:0;z-index:100;background:#05050
 <script>
 (() => {
  const CART_KEY='mlnpods_cart_v1', wa='33780842264', snap='https://www.snapchat.com/add/shopmaillot25';
- const SUPABASE_URL='https://fvighhpzcjzioyijtmzo.supabase.co';
- const SUPABASE_KEY='sb_publishable_4-7YlOeRwbtA9GTavIxLmQ_6nAuSryg';
+ const SUPABASE_URL='https://hnrnxyyijcxqczfpnsxu.supabase.co';
+ const SUPABASE_KEY='sb_publishable_Q3toh3p4CUsL29ibGlBKbA_1xraZn4h';
  const orderDb=window.supabase?.createClient(SUPABASE_URL,SUPABASE_KEY);
  const prices={};
  const cards=[...document.querySelectorAll('article.product')];
@@ -657,28 +664,31 @@ header{height:92px!important;position:sticky;top:0;z-index:100;background:#05050
  ['menuOverlay','cartOverlay'].forEach(id=>document.getElementById(id).addEventListener('click',e=>{if(e.target.id===id)e.currentTarget.classList.remove('open')}));
  document.getElementById('checkoutStart').onclick=()=>{document.getElementById('checkoutForm').hidden=false;document.getElementById('checkoutForm').scrollIntoView({behavior:'smooth',block:'start'})};
  const mode=document.getElementById('deliveryMode');
- const groups={address:document.getElementById('addressGroup'),phone:document.getElementById('phoneGroup'),email:document.getElementById('emailGroup')};
- function setRequired(el,required){el.hidden=!required;const input=el.querySelector('input,textarea');input.required=required;if(!required)input.value=''}
+ const groups={address:document.getElementById('addressGroup'),relay:document.getElementById('relayGroup'),phone:document.getElementById('phoneGroup'),email:document.getElementById('emailGroup')};
+ function setRequired(el,required){el.hidden=!required;el.querySelectorAll('input,textarea').forEach(input=>{input.required=required;if(!required)input.value=''});}
  mode.addEventListener('change',()=>{
   const v=mode.value;
-  setRequired(groups.address,['besancon','france','other'].includes(v));
+  setRequired(groups.address,['besancon','home'].includes(v));
+  setRequired(groups.relay,v==='relay');
   setRequired(groups.phone,!!v);
-  setRequired(groups.email,v==='france');
+  setRequired(groups.email,false);
  });
+ function deliveryFee(v,sub){if(v==='besancon')return sub>=30?0:5;if(v==='saint-claude')return 0;if(v==='relay')return 5;if(v==='home')return 10;return 0;}
  function summary(){
-  cards.forEach(card=>{const name=card.querySelector('h3')?.textContent.trim();if(name)prices[name]=Number((card.querySelector('.current-price')?.textContent||'').replace(',','.').replace(/[^\\d.]/g,''))||prices[name]||0});
-  const v=mode.value, labels={besancon:'Livraison sur Besançon — Gratuit',place:'Remise en main propre — Gratuit',france:'Envoi en France — 5 €',other:'Autre / proximité de Besançon — Sur devis'};
-  let deliveryCost=v==='france'?5:0;
-  let out=['COMMANDE MLNPODS','',...Object.entries(cart).filter(([n,q])=>q>0).map(([n,q])=>`${q} x ${n} — ${money((prices[n]||0)*q)}`),'',`Sous-total produits : ${money(total())}`,`Livraison : ${labels[v]||'À choisir'}`,`Total à régler : ${v==='other'?'Sur devis':money(total()+deliveryCost)}`,'','Paiement : espèces uniquement à la remise des articles. Aucun paiement sur le site.'];
-  if(v==='besancon'||v==='france'||v==='other')out.push('Adresse : '+document.getElementById('customerAddress').value);
-  if(v)out.push('Téléphone : '+document.getElementById('customerPhone').value);
-  if(v==='france')out.push('E-mail : '+document.getElementById('customerEmail').value);
+  const v=mode.value, labels={besancon:'Livraison à Besançon', 'saint-claude':'Retrait secteur Saint-Claude',relay:'Mondial Relay',home:'Livraison à domicile'};
+  const fee=deliveryFee(v,total());
+  let out=['🛍️ COMMANDE MLNPODS','',...Object.entries(cart).filter(([n,q])=>q>0).map(([n,q])=>`• ${q} x ${n} — ${money((prices[n]||0)*q)}`),'',`🧾 Sous-total produits : ${money(total())}`,`🚚 Livraison : ${labels[v]||'À choisir'} — ${money(fee)}`,`💶 TOTAL : ${money(total()+fee)}`,'','📞 Téléphone : '+document.getElementById('customerPhone').value,'','Paiement et confirmation : à convenir avec MlnPods.'];
+  if(v==='besancon'||v==='home')out.push('🏠 Adresse : '+document.getElementById('customerAddress').value);
+  if(v==='relay')out.push('📦 Point relais : '+document.getElementById('relayName').value+' — '+document.getElementById('relayAddress').value);
+  if(v==='saint-claude')out.push('📍 Retrait : secteur Saint-Claude, Besançon');
   return out.join('\n');
  }
  function valid(){
   const form=document.getElementById('checkoutForm');
   if(!mode.value){alert('Choisis un mode de livraison.');return false}
   if(!form.reportValidity())return false;
+  if(!document.getElementById('acceptConditions').checked){alert('Tu dois accepter les conditions avant de continuer.');return false}
+  if(mode.value==='besancon'&&total()<30){};
   if(!Object.values(cart).some(q=>q>0)){alert('Ton panier est vide.');return false}
   return true;
  }
@@ -686,14 +696,17 @@ header{height:92px!important;position:sticky;top:0;z-index:100;background:#05050
  async function saveOrder(){
   if(savedOrderId)return savedOrderId;
   if(!orderDb)throw new Error('Le service de commande ne se charge pas. Réessaie dans quelques instants.');
-  const v=mode.value, deliveryLabels={besancon:'Livraison sur Besançon',place:'Remise en main propre',france:'Envoi en France',other:'Autre / proximité de Besançon'};
-  const subtotal=total(), fee=v==='france'?5:0;
+  const v=mode.value, deliveryLabels={besancon:'Livraison à Besançon','saint-claude':'Retrait secteur Saint-Claude',relay:'Mondial Relay',home:'Livraison à domicile'};
+  const subtotal=total(), fee=deliveryFee(v,subtotal);
   const items=Object.entries(cart).filter(([n,q])=>q>0).map(([name,quantity])=>({name,quantity,unit_price:Number(prices[name]||0),line_total:Number((prices[name]||0)*quantity)}));
-  const payload={items,delivery_mode:deliveryLabels[v],delivery_code:v,address:document.getElementById('customerAddress').value.trim()||null,phone:document.getElementById('customerPhone').value.trim()||null,email:document.getElementById('customerEmail').value.trim()||null,subtotal,delivery_fee:v==='other'?null:fee,total:v==='other'?null:subtotal+fee,payment_method:'Espèces à la remise',status:'En attente'};
+  let address=document.getElementById('customerAddress').value.trim()||null;
+  if(v==='relay')address='Point relais : '+document.getElementById('relayName').value.trim()+' — '+document.getElementById('relayAddress').value.trim();
+  if(v==='saint-claude')address='Retrait secteur Saint-Claude, Besançon';
+  const payload={items,delivery_mode:deliveryLabels[v],delivery_code:v,address,phone:document.getElementById('customerPhone').value.trim()||null,email:null,subtotal,delivery_fee:fee,total:subtotal+fee,payment_method:'À convenir',status:'En attente'};
   const {error}=await orderDb.from('orders').insert(payload);
   if(error)throw new Error('Commande non enregistrée : '+error.message);
-  savedOrderId='saved';
-  return 'Enregistrée';
+  savedOrderId='Enregistrée';
+  return savedOrderId;
  }
  async function prepareOrder(){
   if(!valid())return null;
