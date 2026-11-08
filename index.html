@@ -306,6 +306,27 @@ body.mlnpods-loading{overflow:hidden}
   100%{opacity:1;transform:scale(1.12)}
 }
 
+
+/* Ajustements demandés : Snapchat centré, TikTok brandé, WhatsApp vert, intro plus ample */
+.snap-review-link{display:flex!important;width:max-content!important;max-width:calc(100% - 32px)!important;margin:12px auto 0!important;justify-content:center!important;align-items:center!important}
+.tiktok-card{background:linear-gradient(120deg,#111 0%,#171717 62%,#090909 100%)!important;border:1px solid #333!important;box-shadow:inset 3px 0 0 #25f4ee,inset -3px 0 0 #fe2c55,0 8px 24px #0005!important;color:#fff!important}
+.tiktok-card .social-icon{background:#080808!important;border:1px solid #333!important;box-shadow:2px 0 0 #25f4ee,-2px 0 0 #fe2c55!important}
+.tiktok-mark{width:31px!important;height:31px!important;overflow:visible}
+.tt-cyan{fill:#25f4ee;transform:translate(-.8px,.4px)}
+.tt-pink{fill:#fe2c55;transform:translate(.8px,-.3px)}
+.tt-white{fill:#fff}
+.tiktok-card .social-name,.tiktok-card .social-handle{color:#fff!important}
+.tiktok-card .social-cta{color:#25f4ee!important}
+.contact .wa-action{background:linear-gradient(135deg,#25d96e,#07994b)!important;color:#fff!important;border-color:#5bf29a!important}
+.contact .wa-action .brand-mark{fill:#fff!important}
+#mlnpods-splash .splash-logo{width:min(92vw,720px)!important;max-height:84vh!important}
+@keyframes mlnpods-overlay-zoom{
+  0%{opacity:0;transform:scale(.08)}
+  48%{opacity:1;transform:scale(1.48)}
+  68%{opacity:1;transform:scale(1.32)}
+  100%{opacity:0;transform:scale(1.62)}
+}
+
 </style>
 <link as="image" href="mlnpods-intro-logo.png" id="mlnpods-splash-preload" rel="preload"/>
 </head>
@@ -398,7 +419,12 @@ body.mlnpods-loading{overflow:hidden}
 <span class="social-icon wa-icon"><svg aria-hidden="true" class="brand-mark wa-mark" viewbox="0 0 32 32"><path d="M16 .8A15 15 0 0 0 3.1 23.4L1 31l7.8-2A15.1 15.1 0 1 0 16 .8Zm0 27.4a12.3 12.3 0 0 1-6.3-1.7l-.5-.3-4.6 1.2 1.2-4.5-.3-.5A12.4 12.4 0 1 1 16 28.2Zm6.8-9.3c-.4-.2-2.2-1.1-2.5-1.2-.3-.1-.6-.2-.8.2-.3.4-1 1.2-1.2 1.4-.2.2-.4.3-.8.1-.4-.2-1.6-.6-3-1.9-1.1-1-1.9-2.2-2.1-2.6-.2-.4 0-.6.2-.8l.6-.7c.2-.2.3-.4.4-.6.1-.2 0-.5 0-.7s-.8-2-1.1-2.7c-.3-.7-.6-.6-.8-.6h-.7c-.2 0-.6.1-.9.5-.3.4-1.2 1.2-1.2 2.9s1.2 3.3 1.4 3.5c.2.2 2.4 3.7 5.9 5.2.8.3 1.4.5 1.9.7.8.2 1.5.2 2.1.1.7-.1 2.2-.9 2.5-1.7.3-.8.3-1.5.2-1.7-.1-.2-.3-.3-.7-.5Z"></path></svg></span><span class="social-name">WhatsApp</span><span class="social-handle">+33 7 80 84 22 64</span><span class="social-cta">Nous écrire →</span>
 </a>
 <a class="social-card tiktok-card" href="https://www.tiktok.com/@mlnpods.fr?_r=1&amp;_t=ZN-9BDECkatICU" rel="noopener" target="_blank">
-<span class="social-icon">♪</span><span class="social-name">TikTok</span><span class="social-handle">@mlnpods.fr</span><span class="social-cta">Voir le compte →</span>
+<span class="social-icon tiktok-icon" aria-hidden="true">
+<svg viewBox="0 0 24 24" class="brand-mark tiktok-mark">
+<path class="tt-cyan" d="M14.2 2h3.1c.2 2.1 1.4 3.9 3.5 4.7v3.2a9.3 9.3 0 0 1-3.5-1.2v6.1a6.2 6.2 0 1 1-6.2-6.2c.4 0 .8 0 1.2.1v3.3a3 3 0 1 0 1.9 2.8V2Z"/>
+<path class="tt-pink" d="M12.7 3.3h3.1c.2 2.1 1.4 3.9 3.5 4.7v3.2a9.3 9.3 0 0 1-3.5-1.2v6.1a6.2 6.2 0 1 1-6.2-6.2c.4 0 .8 0 1.2.1v3.3a3 3 0 1 0 1.9 2.8V3.3Z"/>
+<path class="tt-white" d="M13.5 2.6h3.1c.2 2.1 1.4 3.9 3.5 4.7v3.2a9.3 9.3 0 0 1-3.5-1.2v6.1a6.2 6.2 0 1 1-6.2-6.2c.4 0 .8 0 1.2.1v3.3a3 3 0 1 0 1.9 2.8V2.6Z"/>
+</svg></span><span class="social-name">TikTok</span><span class="social-handle">@mlnpods.fr</span><span class="social-cta">Voir le compte →</span>
 </a>
 </div>
 </div>
