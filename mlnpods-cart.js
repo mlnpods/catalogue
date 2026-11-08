@@ -91,11 +91,10 @@
   }).join(''):'<p class="notice mln-empty">Ton panier est vide pour le moment.</p>';}
   const sub=$('cartSubtotal');if(sub)sub.textContent=money(subtotal());
   if($('cartSubtotalCheckout'))$('cartSubtotalCheckout').textContent=money(subtotal());
-   if($('checkoutPromoDiscount'))$('checkoutPromoDiscount').textContent=appliedPromo?'−'+money(promoDiscount()):money(0);
-   if($('checkoutGrandTotal'))$('checkoutGrandTotal').textContent=currentFee===null?'—':money(payableSubtotal()+currentFee);
-   if($('promoCodeMessage')&&appliedPromo)$('promoCodeMessage').textContent='Code '+appliedPromo.code+' appliqué : −'+money(promoDiscount())+'.';
   const currentMode=$('deliveryMode')?.value;
   const currentFee=currentMode?deliveryFee(currentMode,subtotal()):null;
+  if($('checkoutPromoDiscount'))$('checkoutPromoDiscount').textContent=appliedPromo?'−'+money(promoDiscount()):money(0);
+  if($('promoCodeMessage')&&appliedPromo)$('promoCodeMessage').textContent='Code '+appliedPromo.code+' appliqué : −'+money(promoDiscount())+'.';
   if($('checkoutDeliveryFee'))$('checkoutDeliveryFee').textContent=currentFee===null?'À choisir':money(currentFee);
   if($('checkoutGrandTotal'))$('checkoutGrandTotal').textContent=currentFee===null?'—':money(payableSubtotal()+currentFee);
   const start=$('checkoutStart');if(start)start.disabled=!entries().length;
@@ -265,6 +264,12 @@
    ['customerFirstName','customerLastName'].forEach(id=>{const el=$(id);const hint=el?.closest('label')?.querySelector('.mln-optional');if(hint)hint.textContent=shipped?'(obligatoire)':'(facultatif)';});
    $('orderSummary').value='';refreshCheckoutTotals();
   }));
+  // Promo codes: apply/remove controls and Enter key support.
+  $('applyPromoCode')?.addEventListener('click',applyPromo);
+  $('removePromoCode')?.addEventListener('click',removePromo);
+  $('promoCodeInput')?.addEventListener('keydown',e=>{
+   if(e.key==='Enter'){e.preventDefault();applyPromo();}
+  });
   $('sendWhatsApp')?.addEventListener('click',send);
   ['customerFirstName','customerLastName','customerPhone','customerEmail','customerSnapchat','customerStreetNumber','customerStreet','customerAddressComplement','customerPostcode','customerCity','relayName','relayStreetNumber','relayStreet','relayAddressComplement','relayPostcode','relayCity'].forEach(id=>$(id)?.addEventListener('input',()=>{$('orderSummary').value='';}));
   refreshCheckoutTotals();
