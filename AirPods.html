@@ -319,8 +319,246 @@ header.mln-header{position:sticky;top:0;z-index:100;background:#050505ee;backdro
 </figure></div>
 </section>
 </main>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="mlnpods-cart.js"></script>
+<script>
+/* MlnPods — panier et commande de la fiche AirPods */
+(() => {
+  'use strict';
+  const CART_KEY = 'mlnpods_cart_v1';
+  const PRICE = 30;
+  const money = n => Number(n || 0).toLocaleString('fr-FR', {maximumFractionDigits: 2}) + ' €';
+  const $ = id => document.getElementById(id);
+
+  const menu = $('menuOverlay');
+  const drawer = $('cartOverlay');
+  const cartItems = $('cartItems');
+  const qtyInput = $('mlnProductQty');
+  const variantInput = $('mlnVariantSelect');
+  const addButton = $('mlnAddToCart');
+  const stockText = $('mlnVariantStock');
+  const cartCount = $('cartCount');
+  const subtotal = $('cartSubtotal');
+  const checkoutForm = $('checkoutForm');
+
+  if (!menu || !drawer || !cartItems || !qtyInput || !variantInput || !addButton) {
+    console.error('MlnPods : éléments du panier introuvables sur la page AirPods.');
+    return;
+  }
+
+  const variants = {
+    'airpods-5': 'AirPods 5',
+    'airpods-4': 'AirPods 4',
+    'airpods-pro-3': 'AirPods Pro 3',
+    'airpods-pro-2': 'AirPods Pro 2'
+  };
+
+  function readCart() {
+    try {
+      const value = JSON.parse(localStorage.getItem(CART_KEY) || '{}');
+      return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+    } catch (_) { return {}; }
+  }
+  let cart = readCart();
+
+  function entries() {
+    return Object.entries(cart).filter(([, item]) =>
+      item && Number(item.quantity) > 0
+    );
+  }
+  function count() {
+    return entries().reduce((sum, [, item]) => sum + Number(item.quantity), 0);
+  }
+  function total() {
+    return entries().reduce((sum, [, item]) =>
+      sum + Number(item.price || PRICE) * Number(item.quantity), 0);
+  }
+  function save() {
+    try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); }
+    catch (error) { alert('Impossible d’enregistrer le panier sur cet appareil.'); }
+    render();
+  }
+  function render() {
+    cartCount.textContent = count();
+    subtotal.textContent = money(total());
+    cartItems.innerHTML = entries().length ? entries().map(([key, item]) => `
+      <div class="mln-cart-line">
+        <div>
+          <strong>${item.name}</strong>
+          <small>${money(item.price)} / unité</small>
+          <div class="mln-qty-controls">
+            <button type="button" data-action="minus" data-key="${key}" aria-label="Diminuer">−</button>
+            <span>${item.quantity}</span>
+            <button type="button" data-action="plus" data-key="${key}" aria-label="Augmenter">+</button>
+            <button type="button" data-action="remove" data-key="${key}">Supprimer</button>
+          </div>
+        </div>
+        <strong>${money(Number(item.price) * Number(item.quantity))}</strong>
+      </div>`).join('') : '<p class="mln-empty">Ton panier est vide pour le moment.</p>';
+
+    const start = $('checkoutStart');
+    if (start) start.disabled = entries().length === 0;
+    const recap = $('cartSubtotalCheckout');
+    if (recap) recap.textContent = money(total());
+    updateDeliveryTotal();
+  }
+
+  function selectedVariant() {
+    return variantInput.value || 'airpods-5';
+  }
+  function updateAddLabel() {
+    const variant = variants[selectedVariant()] || 'AirPods 5';
+    addButton.textContent = `🛒 Ajouter au panier — ${money(PRICE)}`;
+    addButton.setAttribute('aria-label', `Ajouter ${variant} au panier pour ${money(PRICE)}`);
+  }
+
+  document.querySelectorAll('[data-product-variant]').forEach(button => {
+    button.addEventListener('click', () => {
+      if (button.disabled) return;
+      variantInput.value = button.dataset.productVariant;
+      document.querySelectorAll('[data-product-variant]').forEach(other => {
+        other.setAttribute('aria-pressed', String(other === button));
+      });
+      qtyInput.value = '1';
+      updateAddLabel();
+      if (stockText) stockText.textContent = '✓ Modèle sélectionné — disponibilité à confirmer';
+    });
+  });
+
+  $('qtyMinus')?.addEventListener('click', () => {
+    qtyInput.value = Math.max(1, (Number(qtyInput.value) || 1) - 1);
+  });
+  $('qtyPlus')?.addEventListener('click', () => {
+    qtyInput.value = Math.min(99, (Number(qtyInput.value) || 1) + 1);
+  });
+  $('mlnQtyMinus')?.addEventListener('click', () => {
+    qtyInput.value = Math.max(1, (Number(qtyInput.value) || 1) - 1);
+  });
+  $('mlnQtyPlus')?.addEventListener('click', () => {
+    qtyInput.value = Math.min(99, (Number(qtyInput.value) || 1) + 1);
+  });
+  qtyInput.addEventListener('change', () => {
+    qtyInput.value = Math.min(99, Math.max(1, Math.floor(Number(qtyInput.value) || 1)));
+  });
+
+  addButton.addEventListener('click', () => {
+    const variant = selectedVariant();
+    const name = variants[variant];
+    if (!name) {
+      alert('Choisis un modèle avant de l’ajouter au panier.');
+      return;
+    }
+    const quantity = Math.min(99, Math.max(1, Math.floor(Number(qtyInput.value) || 1)));
+    const key = `airpods:${variant}`;
+    const existing = cart[key] || {name, price: PRICE, quantity: 0};
+    cart[key] = {name, price: PRICE, quantity: Number(existing.quantity || 0) + quantity};
+    save();
+    drawer.classList.add('open');
+  });
+
+  cartItems.addEventListener('click', event => {
+    const button = event.target.closest('button[data-action]');
+    if (!button) return;
+    const key = button.dataset.key;
+    if (!cart[key]) return;
+    if (button.dataset.action === 'plus') cart[key].quantity = Number(cart[key].quantity) + 1;
+    if (button.dataset.action === 'minus') cart[key].quantity = Math.max(0, Number(cart[key].quantity) - 1);
+    if (button.dataset.action === 'remove' || cart[key].quantity <= 0) delete cart[key];
+    save();
+  });
+
+  $('menuOpen')?.addEventListener('click', () => menu.classList.add('open'));
+  $('cartOpen')?.addEventListener('click', () => drawer.classList.add('open'));
+  document.querySelectorAll('[data-close]').forEach(button => {
+    button.addEventListener('click', () => $(button.dataset.close)?.classList.remove('open'));
+  });
+  [menu, drawer].forEach(overlay => overlay.addEventListener('click', event => {
+    if (event.target === overlay) overlay.classList.remove('open');
+  }));
+
+  $('checkoutStart')?.addEventListener('click', () => {
+    if (!entries().length) return;
+    checkoutForm.hidden = false;
+    checkoutForm.scrollIntoView({behavior: 'smooth', block: 'start'});
+  });
+
+  const deliveryMode = $('deliveryMode');
+  const addressGroup = $('addressGroup');
+  const relayGroup = $('relayGroup');
+  const deliveryFee = $('checkoutDeliveryFee');
+  const grandTotal = $('checkoutGrandTotal');
+
+  function updateDeliveryTotal() {
+    if (!deliveryFee || !grandTotal) return;
+    const mode = deliveryMode?.value || '';
+    const fees = {besancon: total() >= 30 ? 0 : 5, 'saint-claude': 0, relay: 5, home: 10};
+    const fee = fees[mode];
+    deliveryFee.textContent = mode ? money(fee) : 'À choisir';
+    grandTotal.textContent = mode ? money(total() + fee) : '—';
+  }
+
+  document.querySelectorAll('[data-delivery-mode]').forEach(button => {
+    button.addEventListener('click', () => {
+      const mode = button.dataset.deliveryMode;
+      deliveryMode.value = mode;
+      document.querySelectorAll('[data-delivery-mode]').forEach(other =>
+        other.setAttribute('aria-pressed', String(other === button))
+      );
+      if (addressGroup) addressGroup.hidden = !['home'].includes(mode);
+      if (relayGroup) relayGroup.hidden = mode !== 'relay';
+      updateDeliveryTotal();
+    });
+  });
+
+  $('sendWhatsApp')?.addEventListener('click', () => {
+    if (!entries().length) return alert('Ton panier est vide.');
+    if (!checkoutForm.reportValidity()) return;
+    if (!deliveryMode.value) return alert('Choisis un mode de livraison.');
+    if (!$('acceptConditions').checked) return alert('Accepte les conditions de commande.');
+
+    const modeNames = {
+      besancon: 'Livraison à Besançon',
+      'saint-claude': 'Retrait secteur Saint-Claude',
+      relay: 'Mondial Relay',
+      home: 'Livraison à domicile'
+    };
+    const fees = {besancon: total() >= 30 ? 0 : 5, 'saint-claude': 0, relay: 5, home: 10};
+    const mode = deliveryMode.value;
+    const lines = [
+      'Bonjour MlnPods, je souhaite confirmer ma commande :',
+      '',
+      ...entries().map(([, item]) => `${item.quantity} x ${item.name} — ${money(item.price * item.quantity)}`),
+      '',
+      `Sous-total produits : ${money(total())}`,
+      `Livraison : ${modeNames[mode]} — ${money(fees[mode])}`,
+      `TOTAL : ${money(total() + fees[mode])}`,
+      '',
+      `Prénom : ${$('customerFirstName').value}`,
+      `Nom : ${$('customerLastName').value}`,
+      `Téléphone : ${$('customerPhone').value}`,
+      `E-mail : ${$('customerEmail').value || 'Non renseigné'}`,
+      `Snapchat : ${$('customerSnapchat').value || 'Non renseigné'}`
+    ];
+    if (mode === 'home') {
+      lines.push(`Adresse : ${$('customerStreetNumber').value} ${$('customerStreet').value}`,
+        `Complément : ${$('customerAddressComplement').value}`,
+        `Code postal : ${$('customerPostcode').value}`,
+        `Ville : ${$('customerCity').value}`);
+    }
+    if (mode === 'relay') {
+      lines.push(`Point relais : ${$('relayName').value}`,
+        `Adresse : ${$('relayStreetNumber').value} ${$('relayStreet').value}`,
+        `Complément : ${$('relayAddressComplement').value}`,
+        `Code postal : ${$('relayPostcode').value}`,
+        `Ville : ${$('relayCity').value}`);
+    }
+    const message = lines.join('\n');
+    $('orderSummary').value = message;
+    window.open('https://wa.me/33780842264?text=' + encodeURIComponent(message), '_blank', 'noopener');
+  });
+
+  updateAddLabel();
+  render();
+})();
+</script>
 
 <script src="mlnpods-sync.js"></script>
 </body></html>
