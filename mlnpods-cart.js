@@ -264,12 +264,7 @@
    ['customerFirstName','customerLastName'].forEach(id=>{const el=$(id);const hint=el?.closest('label')?.querySelector('.mln-optional');if(hint)hint.textContent=shipped?'(obligatoire)':'(facultatif)';});
    $('orderSummary').value='';refreshCheckoutTotals();
   }));
-  // Promo codes: apply/remove controls and Enter key support.
-  $('applyPromoCode')?.addEventListener('click',applyPromo);
-  $('removePromoCode')?.addEventListener('click',removePromo);
-  $('promoCodeInput')?.addEventListener('keydown',e=>{
-   if(e.key==='Enter'){e.preventDefault();applyPromo();}
-  });
+  // Promo controls are attached globally below using event delegation.
   $('sendWhatsApp')?.addEventListener('click',send);
   ['customerFirstName','customerLastName','customerPhone','customerEmail','customerSnapchat','customerStreetNumber','customerStreet','customerAddressComplement','customerPostcode','customerCity','relayName','relayStreetNumber','relayStreet','relayAddressComplement','relayPostcode','relayCity'].forEach(id=>$(id)?.addEventListener('input',()=>{$('orderSummary').value='';}));
   refreshCheckoutTotals();
@@ -279,5 +274,18 @@
   window.addEventListener('storage',e=>{if(e.key===CART_KEY){cart=readCart();render();}});
   render();loadStock();
  }
+ // Robust delegated listeners: they still work if the checkout is moved or rebuilt dynamically.
+ document.addEventListener('click',e=>{
+  const apply=e.target.closest('#applyPromoCode');
+  if(apply){e.preventDefault();applyPromo();return;}
+  const remove=e.target.closest('#removePromoCode');
+  if(remove){e.preventDefault();removePromo();}
+ });
+ document.addEventListener('keydown',e=>{
+  if(e.target && e.target.id==='promoCodeInput' && e.key==='Enter'){
+   e.preventDefault();applyPromo();
+  }
+ });
+ window.MLNPODS_PROMO_HANDLER_VERSION='2.1-delegated';
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
