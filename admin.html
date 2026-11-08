@@ -146,7 +146,7 @@ main{width:100%;max-width:1600px;margin:0 auto;padding:29px clamp(15px,3vw,42px)
 
   <section class="section" id="promos">
    <div class="card">
-    <div class="card-head"><div><h2>Créer un code promo</h2><p>Configure une réduction en pourcentage ou en euros à appliquer dans le panier.</p></div><button class="btn btn-dark" id="refreshPromos">↻ Actualiser les codes</button></div>
+    <div class="card-head"><div><h2>Créer un code promo</h2><p>Configure une réduction en pourcentage ou en euros à appliquer dans le panier.</p></div><button class="btn btn-dark" id="refreshPromos" type="button">↻ Actualiser les codes</button></div>
     <form id="promoForm" class="promo-admin-form">
      <label>Code promo<input id="promoAdminCode" type="text" maxlength="32" placeholder="EXEMPLE10" required autocomplete="off"></label>
      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px">
@@ -207,11 +207,23 @@ async function loadProducts(){
 
 let promoCodes=[];
 async function loadPromos(){
- const {data,error}=await db.from('promo_codes').select('*').order('created_at',{ascending:false});
- if(error){$('promoList').innerHTML='<div class="empty">Erreur : '+esc(error.message)+'</div>';setMessage('promoAdminMessage','Crée la table promo_codes avec le SQL fourni.');return;}
- promoCodes=data||[];
- $('promoList').innerHTML=promoCodes.length?promoCodes.map(p=>`<div class="promo-row" data-promo-id="${esc(p.id)}"><div><strong>🎟️ ${esc(p.code)}</strong><small>${p.discount_type==='percent'?esc(p.discount_value)+' %':euro(p.discount_value)} · Minimum ${euro(p.min_subtotal||0)} · Utilisations ${Number(p.uses_count||0)}${p.max_uses===null?'':' / '+p.max_uses}</small><small>${p.active?'Actif':'Désactivé'}${p.expires_at?' · Expire le '+dateFmt(p.expires_at):''}</small></div><div class="promo-row-actions"><button class="btn btn-dark promo-toggle">${p.active?'Désactiver':'Activer'}</button><button class="btn btn-dark promo-delete">Supprimer</button></div></div>`).join(''):'<div class="empty">Aucun code promo.</div>';
- setMessage('promoAdminMessage',promoCodes.length+' code(s) promo.');
+ const list=$('promoList'), refresh=$('refreshPromos');
+ if(!db){setMessage('promoAdminMessage','Connexion Supabase non initialisée. Recharge la page et reconnecte-toi.');return;}
+ if(refresh){refresh.disabled=true;refresh.textContent='Chargement…';}
+ setMessage('promoAdminMessage','Récupération des codes promo…');
+ if(list) list.innerHTML='<div class="empty">Chargement des codes promo…</div>';
+ try{
+  const {data,error}=await db.from('promo_codes').select('*').order('created_at',{ascending:false});
+  if(error) throw error;
+  promoCodes=data||[];
+  if(list) list.innerHTML=promoCodes.length?promoCodes.map(p=>`<div class="promo-row" data-promo-id="${esc(p.id)}"><div><strong>🎟️ ${esc(p.code)}</strong><small>${p.discount_type==='percent'?esc(p.discount_value)+' %':euro(p.discount_value)} · Minimum ${euro(p.min_subtotal||0)} · Utilisations ${Number(p.uses_count||0)}${p.max_uses===null?'':' / '+p.max_uses}</small><small>${p.active?'Actif':'Désactivé'}${p.expires_at?' · Expire le '+dateFmt(p.expires_at):''}</small></div><div class="promo-row-actions"><button type="button" class="btn btn-dark promo-toggle">${p.active?'Désactiver':'Activer'}</button><button type="button" class="btn btn-dark promo-delete">Supprimer</button></div></div>`).join(''):'<div class="empty">Aucun code promo.</div>';
+  setMessage('promoAdminMessage',promoCodes.length+' code(s) promo chargé(s).');
+ }catch(error){
+  if(list) list.innerHTML='<div class="empty">Erreur : '+esc(error?.message||String(error))+'</div>';
+  setMessage('promoAdminMessage','Impossible de charger les codes promo : '+(error?.message||String(error)));
+ }finally{
+  if(refresh){refresh.disabled=false;refresh.textContent='↻ Actualiser les codes';}
+ }
 }
 async function createPromo(e){
  e.preventDefault();const code=$('promoAdminCode').value.trim().toUpperCase().replace(/\s+/g,''),type=$('promoAdminType').value,value=Number($('promoAdminValue').value),min=Number($('promoAdminMin').value||0),maxRaw=$('promoAdminMax').value;
@@ -388,8 +400,14 @@ async function logout(){await db.auth.signOut();setLogged(false);$('password').v
 async function init(){
  if(!window.supabase?.createClient){setMessage('loginMessage','Supabase ne s’est pas chargé. Vérifie ta connexion puis recharge.');return;}
  db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
- $('loginForm').addEventListener('submit',login);$('logoutButton').addEventListener('click',logout);
- $('refreshAll').addEventListener('click',refreshAll);$('refreshProducts').addEventListener('click',loadProducts);$('refreshPromos')?.addEventListener('click',loadPromos);$('promoForm')?.addEventListener('submit',createPromo);$('promoList')?.addEventListener('click',promoAction);
+ // Brancher le bouton promo en premier et de façon tolérante aux éléments manquants.
+ const promoRefreshButton=$('refreshPromos');
+ if(promoRefreshButton){
+  promoRefreshButton.type='button';
+  promoRefreshButton.addEventListener('click',function(event){event.preventDefault();loadPromos();});
+ }
+ $('loginForm')?.addEventListener('submit',login);$('logoutButton')?.addEventListener('click',logout);
+ $('refreshAll')?.addEventListener('click',refreshAll);$('refreshProducts')?.addEventListener('click',loadProducts);$('promoForm')?.addEventListener('submit',createPromo);$('promoList')?.addEventListener('click',promoAction);
  $('quickProducts').addEventListener('click',()=>go('products'));
  document.querySelectorAll('.nav button').forEach(b=>b.addEventListener('click',()=>go(b.dataset.tab)));
  document.querySelectorAll('[data-goto]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.goto)));
