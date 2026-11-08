@@ -1,7 +1,7 @@
 // MlnPods - synchronisation publique Supabase (lecture seule)
 (function(){
  'use strict';
- const URL='https://hnrnxyyijcxqczfpnsxu.supabase.co';
+ const URL='https://fvighhpzcjzioyijtmzo.supabase.co';
  const KEY='sb_publishable_4-7YlOeRwbtA9GTavIxLmQ_6nAuSryg';
  const headers={'apikey':KEY,'Content-Type':'application/json'};
  async function request(path,opts={}){
