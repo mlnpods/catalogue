@@ -21,6 +21,7 @@ body{margin:0;background:var(--bg);color:var(--white);font-family:Arial,Helvetic
 .desc{color:#c8c8c8;font-size:17px;line-height:1.7}.features{padding:0;list-style:none;color:#ddd;line-height:2}
 .order{display:inline-block;background:var(--gold);color:#050505;padding:16px 24px;border-radius:40px;font-weight:900;margin-top:18px;text-decoration:none}
 .note{color:#888;font-size:12px;line-height:1.5;margin-top:12px}.section-title{font-size:23px;margin:8px 0 14px}
+@media(max-width:420px){.mln-cart-line{grid-template-columns:54px minmax(0,1fr) auto;gap:8px}.mln-cart-thumb{width:54px;height:54px}.mln-line-price{font-size:13px}}
 @media(max-width:760px){.layout{grid-template-columns:1fr;gap:24px}.gallery img{height:190px}.details{order:initial}.brand{min-height:104px}}
 
 .order-actions{display:grid;gap:12px;margin:24px 0 12px}
@@ -85,7 +86,7 @@ header.mln-header{position:sticky;top:0;z-index:100;background:#050505ee;backdro
 .mln-close{float:right;padding:8px 12px;border:1px solid #555;border-radius:9px;background:#222;color:#fff;cursor:pointer}
 .mln-menu-link{display:block;padding:15px 8px;border-bottom:1px solid #292313;color:#fff;text-decoration:none;font-weight:800}
 .mln-menu-link:hover{color:#ffd21c}
-.mln-cart-line{display:grid;grid-template-columns:1fr auto;gap:8px;padding:14px 0;border-bottom:1px solid #333}
+.mln-cart-line{display:grid;grid-template-columns:64px minmax(0,1fr) auto;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid #333}.mln-cart-thumb{width:64px;height:64px;object-fit:contain;border-radius:10px;background:#171717;border:1px solid #3a3a3a;padding:4px}.mln-cart-line strong{overflow-wrap:anywhere}.mln-cart-line .mln-line-content{min-width:0}.mln-cart-line .mln-line-price{white-space:nowrap;align-self:start;padding-top:3px}
 .mln-cart-line small{display:block;color:#aaa;margin-top:4px}
 .mln-qty-controls{display:flex;align-items:center;gap:8px;margin-top:9px;flex-wrap:wrap}
 .mln-qty-controls button{padding:6px 10px;border:1px solid #555;border-radius:7px;background:#292929;color:#fff;cursor:pointer}
@@ -381,7 +382,8 @@ header.mln-header{position:sticky;top:0;z-index:100;background:#050505ee;backdro
     subtotal.textContent = money(total());
     cartItems.innerHTML = entries().length ? entries().map(([key, item]) => `
       <div class="mln-cart-line">
-        <div>
+        <img class="mln-cart-thumb" src="${item.image || 'assets/airpods-3.jpeg'}" alt="${item.name}" loading="lazy" onerror="this.onerror=null;this.src='assets/airpods-1.webp'">
+        <div class="mln-line-content">
           <strong>${item.name}</strong>
           <small>${money(item.price)} / unité</small>
           <div class="mln-qty-controls">
@@ -391,7 +393,7 @@ header.mln-header{position:sticky;top:0;z-index:100;background:#050505ee;backdro
             <button type="button" data-action="remove" data-key="${key}">Supprimer</button>
           </div>
         </div>
-        <strong>${money(Number(item.price) * Number(item.quantity))}</strong>
+        <strong class="mln-line-price">${money(Number(item.price) * Number(item.quantity))}</strong>
       </div>`).join('') : '<p class="mln-empty">Ton panier est vide pour le moment.</p>';
 
     const start = $('checkoutStart');
@@ -449,7 +451,7 @@ header.mln-header{position:sticky;top:0;z-index:100;background:#050505ee;backdro
     const quantity = Math.min(99, Math.max(1, Math.floor(Number(qtyInput.value) || 1)));
     const key = `airpods:${variant}`;
     const existing = cart[key] || {name, price: PRICE, quantity: 0};
-    cart[key] = {name, price: PRICE, quantity: Number(existing.quantity || 0) + quantity};
+    cart[key] = {name, price: PRICE, image: 'assets/airpods-3.jpeg', quantity: Number(existing.quantity || 0) + quantity};
     save();
     drawer.classList.add('open');
   });
