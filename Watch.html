@@ -101,15 +101,17 @@ header.mln-header{position:sticky;top:0;z-index:100;background:#050505ee;backdro
 .mln-add-cart:active{transform:scale(.99)}
 @media(max-width:650px){.mln-header-inner{min-height:66px}.mln-header-logo img{width:56px;height:56px}.mln-head-btn{width:41px;height:41px}.mln-buy-box{padding:14px}}
 
-</style></head><body data-product="Watch" data-price="35">
+
+.checkout-form{margin-top:18px}.checkout-form[hidden]{display:none}.checkout-form label{display:block;margin:12px 0 6px;font-weight:800;color:#f8f8f8}.checkout-form input,.checkout-form textarea,.checkout-form select{width:100%;padding:12px;border:1px solid #51451d;border-radius:9px;background:#111;color:#fff;font:inherit}.checkout-form .notice{color:#bbb;font-size:13px;line-height:1.5}.checkout-btn{display:block;width:100%;margin:12px 0;padding:14px;border:0;border-radius:11px;background:#ffd21c;color:#111;font-weight:900;cursor:pointer}.checkout-btn:disabled{opacity:.5}.send-options{display:grid;grid-template-columns:1fr 1fr;gap:10px}.send-options button{padding:12px;border:0;border-radius:10px;font-weight:900;cursor:pointer}.send-wa{background:#20c765;color:#062b16}.send-snap{background:#ffdf00;color:#111}.home-variant-label select{font:inherit}
+</style></head><body data-product="Watch" data-product-id="watch" data-price="35">
 <header class="mln-header"><div class="wrap mln-header-inner">
-  <button class="mln-head-btn" id="mlnMenuOpen" type="button" aria-label="Ouvrir le menu">☰</button>
+  <button class="mln-head-btn" id="menuOpen" type="button" aria-label="Ouvrir le menu">☰</button>
   <a class="mln-header-logo" href="index.html" aria-label="Retour à l'accueil MlnPods"><img src="mlnpods-intro-logo.png" alt="Logo MlnPods"></a>
-  <button class="mln-head-btn" id="mlnCartOpen" type="button" aria-label="Ouvrir le panier">🛒 <span id="mlnCartCount">0</span></button>
+  <button class="mln-head-btn" id="cartOpen" type="button" aria-label="Ouvrir le panier">🛒 <span id="cartCount">0</span></button>
 </div></header>
-<div class="mln-overlay" id="mlnMenuOverlay">
+<div class="mln-overlay" id="menuOverlay">
   <nav class="mln-drawer" aria-label="Menu MlnPods">
-    <button class="mln-close" type="button" data-mln-close="mlnMenuOverlay">Fermer ✕</button>
+    <button class="mln-close" type="button" data-close="menuOverlay">Fermer ✕</button>
     <h2>Menu MlnPods</h2>
     <a class="mln-menu-link" href="index.html">Accueil / Catalogue</a>
     <a class="mln-menu-link" href="AirPods-Max.html">AirPods Max</a>
@@ -118,17 +120,40 @@ header.mln-header{position:sticky;top:0;z-index:100;background:#050505ee;backdro
     <a class="mln-menu-link" href="index.html#contact">Contact</a>
   </nav>
 </div>
-<div class="mln-overlay" id="mlnCartOverlay">
-  <aside class="mln-drawer right" aria-label="Mon panier">
-    <button class="mln-close" type="button" data-mln-close="mlnCartOverlay">Fermer ✕</button>
-    <h2>🛒 Mon panier</h2>
-    <div id="mlnCartItems"></div>
-    <div class="mln-cart-total"><span>Total produits</span><span id="mlnCartTotal">0 €</span></div>
-    <p class="mln-empty">La commande sera envoyée sur WhatsApp pour confirmation. Aucun paiement sur le site.</p>
-    <button class="mln-checkout" type="button" id="mlnCheckout">Commander sur WhatsApp</button>
-  </aside>
-</div>
+<div class="mln-overlay" id="cartOverlay"><aside class="mln-drawer right" aria-label="Panier">
+<button class="mln-close" data-close="cartOverlay" type="button">Fermer ✕</button><h2>🛒 Mon panier</h2>
+<div id="cartItems"></div><div class="mln-cart-total"><span>Total produits</span><span id="cartSubtotal">0 €</span></div>
 
+  <button class="checkout-btn" id="checkoutStart" type="button">Valider ma commande</button>
+  <form class="checkout-form" id="checkoutForm" hidden>
+   <h2>Livraison et coordonnées</h2>
+   <label for="deliveryMode">Mode de livraison</label>
+   <select id="deliveryMode" required>
+    <option value="">Choisir une option</option>
+    <option value="besancon">🚗 Livraison à Besançon — gratuite dès 30 €, sinon 5 €</option>
+    <option value="saint-claude">📍 Retrait secteur Saint-Claude — Gratuit</option>
+    <option value="relay">📦 Mondial Relay — 5 €</option>
+    <option value="home">🏠 Livraison à domicile — 10 €</option>
+   </select>
+   <div id="addressGroup" hidden>
+    <label for="customerAddress">Adresse complète (numéro, rue, complément, code postal et ville)</label>
+    <textarea id="customerAddress" rows="3" placeholder="Ex. 12 rue des Fleurs, 25000 Besançon"></textarea>
+   </div>
+   <div id="relayGroup" hidden>
+    <p class="notice">📦 Choisis ton point relais sur le site public Mondial Relay, sans créer de compte, puis recopie ses coordonnées ci-dessous.</p>
+    <p><a href="https://www.mondialrelay.fr/trouver-le-point-relais-le-plus-proche/" target="_blank" rel="noopener" style="color:#ffd21c;font-weight:800">🔎 Trouver un point relais Mondial Relay</a></p>
+    <label for="relayName">Nom du point relais</label><input id="relayName" type="text" placeholder="Nom du commerce">
+    <label for="relayAddress">Adresse du point relais</label><textarea id="relayAddress" rows="2" placeholder="Adresse, code postal et ville"></textarea>
+   </div>
+   <div id="phoneGroup" hidden><label for="customerPhone">Numéro de téléphone</label><input id="customerPhone" type="tel" autocomplete="tel" placeholder="06 00 00 00 00"></div>
+   <div id="emailGroup" hidden><label for="customerEmail">Adresse e-mail (facultatif)</label><input id="customerEmail" type="email" autocomplete="email"></div>
+   <p class="notice">💳 Aucun paiement sur le site. Les modalités de paiement seront confirmées avant l’envoi ou la remise.</p>
+   <label style="display:flex;gap:10px;align-items:flex-start;margin:14px 0"><input id="acceptConditions" type="checkbox" required style="width:auto;margin-top:4px"> J’accepte les conditions de commande et les frais de livraison affichés.</label>
+   <p class="notice"><strong>Important :</strong> ta commande sera enregistrée et le récapitulatif sera envoyé sur WhatsApp ou Snapchat.</p>
+   <div class="send-options"><button class="send-wa" type="button" id="sendWhatsApp">WhatsApp</button><button class="send-snap" type="button" id="sendSnap">Snapchat</button></div>
+   <textarea id="orderSummary" rows="9" readonly aria-label="Récapitulatif à copier" style="margin-top:12px"></textarea>
+   <button type="button" class="checkout-btn" id="copyOrder">Copier le récapitulatif</button>
+  </form></aside></div>
 
 <div class="promo-ribbon" role="region" aria-label="Offres promotionnelles MlnPods">
   <div class="promo-ribbon-track">
@@ -175,75 +200,8 @@ header.mln-header{position:sticky;top:0;z-index:100;background:#050505ee;backdro
 </figure></div>
 </section>
 </main>
-<script>
-(() => {
-  const CART_KEY = 'mlnpods_cart_v1';
-  const prices = {'AirPods Max':50,'AirPods':30,'Watch':35,'Chargeur rapide':15};
-  const currentName = document.body.dataset.product;
-  const currentPrice = Number(document.body.dataset.price);
-  const money = n => Number(n || 0).toLocaleString('fr-FR',{maximumFractionDigits:2}) + ' €';
-  const readCart = () => { try { return JSON.parse(localStorage.getItem(CART_KEY) || '{}') || {}; } catch(e) { return {}; } };
-  let cart = readCart();
-  const save = () => { localStorage.setItem(CART_KEY, JSON.stringify(cart)); render(); };
-  const count = () => Object.values(cart).reduce((sum,q)=>sum+Math.max(0,Number(q)||0),0);
-  const total = () => Object.entries(cart).reduce((sum,[name,q])=>sum+(prices[name]||0)*Math.max(0,Number(q)||0),0);
-  const menu = document.getElementById('mlnMenuOverlay');
-  const drawer = document.getElementById('mlnCartOverlay');
-  const cartItems = document.getElementById('mlnCartItems');
-
-  document.getElementById('mlnMenuOpen').addEventListener('click',()=>menu.classList.add('open'));
-  document.getElementById('mlnCartOpen').addEventListener('click',()=>drawer.classList.add('open'));
-  document.querySelectorAll('[data-mln-close]').forEach(btn=>btn.addEventListener('click',()=>document.getElementById(btn.dataset.mlnClose).classList.remove('open')));
-  [menu,drawer].forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open')}));
-
-  const qtyInput = document.getElementById('mlnProductQty');
-  document.getElementById('mlnQtyMinus').addEventListener('click',()=>qtyInput.value=Math.max(1,(Number(qtyInput.value)||1)-1));
-  document.getElementById('mlnQtyPlus').addEventListener('click',()=>qtyInput.value=Math.min(99,(Number(qtyInput.value)||1)+1));
-  qtyInput.addEventListener('change',()=>qtyInput.value=Math.min(99,Math.max(1,Math.floor(Number(qtyInput.value)||1))));
-  document.getElementById('mlnAddToCart').addEventListener('click',()=>{
-    const qty=Math.min(99,Math.max(1,Math.floor(Number(qtyInput.value)||1)));
-    cart[currentName]=(Number(cart[currentName])||0)+qty;
-    save();
-    drawer.classList.add('open');
-  });
-
-  cartItems.addEventListener('click',e=>{
-    const b=e.target.closest('button'); if(!b)return;
-    const name=b.dataset.name; if(!name)return;
-    if(b.dataset.action==='plus')cart[name]=(Number(cart[name])||0)+1;
-    if(b.dataset.action==='minus')cart[name]=Math.max(0,(Number(cart[name])||0)-1);
-    if(b.dataset.action==='remove')delete cart[name];
-    if(cart[name]===0)delete cart[name];
-    save();
-  });
-
-  function render(){
-    document.getElementById('mlnCartCount').textContent=count();
-    const entries=Object.entries(cart).filter(([n,q])=>q>0);
-    cartItems.innerHTML=entries.length ? entries.map(([name,q])=>`
-      <div class="mln-cart-line">
-        <div><strong>${name}</strong><small>${money(prices[name])} / unité</small>
-          <div class="mln-qty-controls">
-            <button type="button" data-action="minus" data-name="${name}" aria-label="Diminuer ${name}">−</button>
-            <span>${q}</span>
-            <button type="button" data-action="plus" data-name="${name}" aria-label="Augmenter ${name}">+</button>
-            <button type="button" data-action="remove" data-name="${name}">Supprimer</button>
-          </div>
-        </div><strong>${money((prices[name]||0)*q)}</strong>
-      </div>`).join('') : '<p class="mln-empty">Ton panier est vide pour le moment.</p>';
-    document.getElementById('mlnCartTotal').textContent=money(total());
-    document.getElementById('mlnCheckout').disabled=!entries.length;
-  }
-  document.getElementById('mlnCheckout').addEventListener('click',()=>{
-    const entries=Object.entries(cart).filter(([n,q])=>q>0);
-    if(!entries.length)return;
-    const lines=['Bonjour MlnPods, je souhaite confirmer cette commande :','',...entries.map(([name,q])=>`${q} x ${name} — ${money((prices[name]||0)*q)}`),'',`Total produits : ${money(total())}`,'','Merci de me confirmer la disponibilité et les modalités de livraison.'];
-    window.open('https://wa.me/33780842264?text='+encodeURIComponent(lines.join('\\n')),'_blank','noopener');
-  });
-  window.addEventListener('storage',e=>{if(e.key===CART_KEY){cart=readCart();render();}});
-  render();
-})();
-</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="mlnpods-cart.js"></script>
 
 <script src="mlnpods-sync.js"></script>
 </body></html>
