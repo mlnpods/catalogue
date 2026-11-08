@@ -69,8 +69,10 @@
   document.querySelectorAll('[data-product-variant],[data-home-variant]').forEach(btn=>{
    const id=btn.dataset.productVariant||btn.dataset.homeVariant;
    const v=variants[id];
-   btn.disabled=!!v&&Number(v.stock_quantity||0)<=0;
-   btn.title=v?`${Number(v.stock_quantity||0)} en stock`:'Stock indisponible';
+   // Le choix d'un modèle doit rester cliquable même si son stock est à zéro.
+   // Seul le bouton d'ajout au panier est bloqué en cas de rupture.
+   btn.disabled=false;
+   btn.title=v?`${Number(v.stock_quantity||0)>0?`${Number(v.stock_quantity)} en stock`:'Rupture de stock'}`:'Stock en cours de vérification';
   });
   const status=$('mlnVariantStock');
   if(status){
