@@ -1,172 +1,256 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#070707">
-<title>Administration</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#080808">
+<title>MlnPods — Administration</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root{--bg:#070707;--gold:#ffd21c;--panel:#151515;--line:#333}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:#fff;font-family:Arial,sans-serif}
-.wrap{width:min(760px,92%);margin:35px auto}
-header{text-align:center;margin-bottom:28px}
-header img{width:150px;max-height:100px;object-fit:contain}
-h1{font-size:22px;letter-spacing:4px;color:var(--gold);margin:12px 0}
-h2{font-size:19px}
-.panel,.product{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:16px}
-input{width:100%;padding:13px;margin:7px 0 14px;background:#090909;color:#fff;border:1px solid #444;border-radius:9px;font-size:16px}
-label{display:block;font-size:13px;color:#ccc;margin-top:9px}
-button{border:0;border-radius:9px;padding:13px 18px;background:var(--gold);color:#111;font-weight:bold;font-size:15px;cursor:pointer}
-button.secondary{background:#292929;color:#fff}
-button:disabled{opacity:.5;cursor:wait}
-.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:15px}
-.product h2{color:var(--gold);margin:0 0 12px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.checks{display:flex;gap:22px;flex-wrap:wrap;margin:12px 0}
-.checks label{display:flex;align-items:center;gap:8px}
-.checks input{width:auto;margin:0}
-.status{font-size:13px;color:#ccc;margin:12px 0;overflow-wrap:anywhere}
-.order-card{background:#151515;border:1px solid #51451d;border-radius:14px;padding:16px;margin:12px 0}.order-card h3{color:var(--gold);margin:0 0 8px}.order-card pre{white-space:pre-wrap;overflow-wrap:anywhere;font:14px/1.5 Arial;color:#ddd}.order-meta{color:#aaa;font-size:12px}.order-status{width:100%;padding:12px;background:#090909;color:#fff;border:1px solid #444;border-radius:9px;margin:10px 0}.order-total{font-size:19px;color:var(--gold);font-weight:bold}
+:root{--bg:#080808;--side:#0d0d0d;--panel:#131313;--panel2:#191919;--line:#2b2b2b;--gold:#f4c928;--gold2:#d7a900;--muted:#929292;--green:#35c77c;--red:#ff6868;--orange:#ffbd55}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#f7f7f7;font:14px/1.45 Inter,Arial,sans-serif}button,input,select{font:inherit}button{cursor:pointer}
 .hidden{display:none!important}
-@media(max-width:480px){.grid{grid-template-columns:1fr}.wrap{margin:20px auto}}
+.login-screen{min-height:100vh;display:grid;place-items:center;padding:22px;background:radial-gradient(ellipse at 50% 10%,#44350e35,transparent 48%),var(--bg)}
+.login-card{width:min(420px,100%);padding:30px;background:linear-gradient(145deg,#181818,#101010);border:1px solid #574817;border-radius:22px;box-shadow:0 25px 90px #0009;text-align:center}
+.login-logo{width:116px;height:116px;object-fit:contain;margin:0 auto 12px}.login-card h1{font-size:21px;letter-spacing:3px;color:var(--gold);margin:8px 0}.login-card p{color:var(--muted);margin:0 0 23px}
+.field{text-align:left;margin:14px 0}.field label{display:block;font-size:12px;color:#bbb;margin:0 0 7px}.field input,.field select,.field textarea{width:100%;background:#090909;border:1px solid #393939;color:#fff;border-radius:10px;padding:12px 13px;outline:none}.field input:focus,.field select:focus{border-color:var(--gold)}
+.btn{border:0;border-radius:10px;padding:11px 15px;font-weight:800}.btn-gold{background:var(--gold);color:#111}.btn-dark{background:#242424;border:1px solid #393939;color:#eee}.btn-quiet{background:transparent;border:1px solid #393939;color:#ccc}.btn:disabled{opacity:.55;cursor:wait}.login-card .btn{width:100%;margin-top:8px}.message{min-height:18px;color:#ccc;font-size:12px;margin:13px 0 0;overflow-wrap:anywhere}
+.app{min-height:100vh;display:grid;grid-template-columns:252px minmax(0,1fr)}
+.sidebar{background:var(--side);border-right:1px solid var(--line);padding:23px 15px;display:flex;flex-direction:column;gap:25px;position:sticky;top:0;height:100vh}
+.brand{display:flex;align-items:center;gap:11px;padding:0 8px 20px;border-bottom:1px solid var(--line)}
+.brand img{width:52px;height:52px;object-fit:contain}.brand strong{letter-spacing:1.5px;font-size:14px}.brand small{display:block;color:#777;font-size:9px;letter-spacing:2px;margin-top:3px}
+.nav-label{font-size:10px;letter-spacing:1.8px;color:#666;font-weight:800;padding:0 10px;margin-bottom:-17px}
+.nav{display:grid;gap:6px}.nav button{display:flex;align-items:center;gap:12px;width:100%;border:1px solid transparent;border-radius:11px;padding:12px 13px;background:transparent;color:#aaa;text-align:left;font-weight:700}
+.nav button:hover{background:#ffffff08;color:#fff}.nav button.active{background:#f4c92813;border-color:#f4c92855;color:var(--gold)}
+.nav-ico{width:20px;text-align:center;font-size:17px}.side-foot{margin-top:auto;border-top:1px solid var(--line);padding:16px 8px 0;color:#999;font-size:11px}.admin{display:flex;align-items:center;gap:9px;margin-top:11px;color:#eee}.avatar{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:#30280d;color:var(--gold);font-weight:900}
+main{width:100%;max-width:1600px;margin:0 auto;padding:29px clamp(15px,3vw,42px) 55px;min-width:0}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:25px}.eyebrow{color:var(--gold);font-size:10px;font-weight:900;letter-spacing:2px}.topbar h1{font-size:27px;letter-spacing:-.6px;margin:5px 0 2px}.topbar p{color:var(--muted);margin:0}.top-actions{display:flex;align-items:center;gap:9px}
+.section{display:none}.section.active{display:block}
+.grid{display:grid;gap:14px}.stats{grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:16px}
+.card{min-width:0;background:linear-gradient(145deg,#171717,#111);border:1px solid var(--line);border-radius:16px;padding:17px}
+.stat-head{display:flex;align-items:center;justify-content:space-between;color:var(--muted);font-size:12px}.stat-icon{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;background:#f4c92815;color:var(--gold);font-size:16px}
+.stat-value{font-size:27px;font-weight:900;letter-spacing:-.7px;margin:12px 0 3px}.stat-foot{font-size:11px;color:var(--muted)}
+.cols{grid-template-columns:1.5fr 1fr;align-items:start}.card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:15px}.card-head h2{font-size:15px;margin:0}.card-head p{font-size:11px;color:var(--muted);margin:4px 0 0}
+.periods{display:flex;gap:5px;background:#090909;padding:4px;border-radius:9px}.periods button{border:0;border-radius:7px;padding:7px 9px;background:transparent;color:#999;font-size:11px}.periods button.active{background:#3a300f;color:var(--gold)}
+.chart{height:200px;display:flex;align-items:end;gap:9px;padding:13px 4px 0;border-bottom:1px solid var(--line)}.bar-col{height:100%;flex:1;min-width:0;display:flex;flex-direction:column;justify-content:end;align-items:center;gap:7px;color:#777;font-size:10px}.bar{width:min(34px,75%);min-height:3px;background:linear-gradient(180deg,#ffe36c,#a37b00);border-radius:7px 7px 2px 2px;box-shadow:0 0 18px #f4c92814}.bar-value{font-size:9px;color:#aaa;white-space:nowrap}
+.alert-list,.activity-list{display:grid;gap:10px}.alert-row,.activity-row{display:flex;align-items:center;gap:10px;padding:10px;border-radius:11px;background:#0d0d0d;border:1px solid #252525}.alert-icon,.activity-icon{width:32px;height:32px;flex:none;border-radius:9px;display:grid;place-items:center;background:#f4c92813;color:var(--gold)}.alert-icon.danger{background:#ff686817;color:var(--red)}.alert-row strong,.activity-row strong{display:block;font-size:12px}.alert-row small,.activity-row small{display:block;color:var(--muted);font-size:10px;margin-top:2px}.pill{font-size:10px;padding:5px 8px;border-radius:30px;background:#f4c92818;color:var(--gold);white-space:nowrap}.pill.green{background:#35c77c18;color:#55d994}.pill.red{background:#ff686818;color:#ff8585}.pill.orange{background:#ffbd5518;color:var(--orange)}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}.search{background:#0d0d0d;border:1px solid #333;border-radius:10px;color:white;padding:11px 13px;min-width:220px;outline:none}.muted{color:var(--muted);font-size:11px}
+.product-list,.orders-list{display:grid;gap:10px}
+.product-row{display:grid;grid-template-columns:45px minmax(130px,1fr) 105px 125px minmax(180px,auto);gap:12px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:12px}
+.product-thumb{width:44px;height:44px;border-radius:11px;background:linear-gradient(145deg,#332a10,#111);border:1px solid #54451c;display:grid;place-items:center;color:var(--gold);font-size:19px}
+.product-name strong{display:block;font-size:13px}.product-name small{font-size:10px;color:var(--muted)}
+.product-edit{display:flex;gap:6px;align-items:center}.product-edit label{font-size:10px;color:var(--muted)}.product-edit input{width:78px;background:#090909;color:white;border:1px solid #383838;border-radius:8px;padding:8px}
+.checks-inline{display:flex;gap:10px;flex-wrap:wrap;font-size:10px;color:#bbb}.checks-inline label{display:flex;align-items:center;gap:5px}.checks-inline input{accent-color:var(--gold)}
+.product-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.product-actions input{width:68px;background:#090909;color:#fff;border:1px solid #383838;border-radius:8px;padding:8px}.product-actions .btn{padding:8px 10px;font-size:11px}
+.order-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:15px}.order-head{display:flex;justify-content:space-between;gap:10px;align-items:start}.order-head h3{margin:0;color:var(--gold);font-size:14px}.order-meta{color:var(--muted);font-size:10px;margin-top:4px}.order-details{white-space:pre-wrap;overflow-wrap:anywhere;color:#ddd;font-size:12px;line-height:1.6;margin:12px 0}.order-bottom{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:11px}.order-total{color:var(--gold);font-size:18px;font-weight:900}.order-controls{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.order-status{background:#090909;color:#fff;border:1px solid #3b3b3b;border-radius:8px;padding:9px}
+.empty{padding:25px;text-align:center;color:var(--muted);border:1px dashed #383838;border-radius:13px}
+.export-actions{display:flex;gap:8px;flex-wrap:wrap}.notice{color:var(--muted);font-size:11px;margin-top:15px}
+.table-wrap{overflow-x:auto}.summary-table{width:100%;border-collapse:collapse;font-size:12px}.summary-table th,.summary-table td{text-align:left;padding:10px;border-bottom:1px solid var(--line)}.summary-table th{color:var(--muted);font-weight:700}
+@media(max-width:1050px){.app{grid-template-columns:78px minmax(0,1fr)}.sidebar{padding:18px 9px}.brand{justify-content:center;padding:0 0 17px}.brand-copy,.nav-label,.nav-text,.side-foot .admin-copy{display:none}.nav button{justify-content:center;padding:13px 4px}.nav-ico{font-size:19px}.admin{justify-content:center}.side-foot{padding:15px 0}.cols{grid-template-columns:1fr}}
+@media(max-width:700px){main{padding:20px 12px 40px}.topbar{align-items:flex-start}.topbar h1{font-size:22px}.topbar p{font-size:11px}.top-actions .btn-quiet{display:none}.stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.card{padding:13px}.stat-value{font-size:23px}.chart{gap:4px;height:170px}.product-row{grid-template-columns:42px 1fr auto;gap:9px}.product-edit{grid-column:2}.checks-inline{grid-column:2}.product-actions{grid-column:1/-1;justify-content:space-between}.product-actions input{flex:1}.search{min-width:0;width:100%}.card-head{align-items:flex-start;flex-wrap:wrap}}
+@media print{body{background:#fff;color:#111}.sidebar,.topbar,.toolbar,.order-controls,.nav,.btn,.notice{display:none!important}.app{display:block}main{max-width:none;padding:0}.section{display:none!important}#orders{display:block!important}.order-card,.card{background:#fff;color:#111;border:1px solid #ccc;break-inside:avoid}.order-details,.order-meta,.muted{color:#333}.order-head h3,.order-total{color:#8b6900}.order-status{display:none}}
 </style>
 </head>
 <body>
-<div class="wrap">
-<header><img src="mlnpods-intro-logo.png" alt="Logo"><h1>ADMINISTRATION</h1></header>
-<section id="login" class="panel">
-<h2>Connexion administrateur</h2>
-<form id="loginForm">
-<label for="email">Adresse e-mail</label>
-<input id="email" type="email" autocomplete="username" placeholder="Ton adresse e-mail" required>
-<label for="password">Mot de passe</label>
-<input id="password" type="password" autocomplete="current-password" placeholder="Ton mot de passe" required>
-<button type="submit" id="loginButton">Se connecter</button>
-</form>
-<p id="loginMessage" class="status" role="status"></p>
+<section class="login-screen" id="login">
+ <form class="login-card" id="loginForm">
+  <img class="login-logo" src="mlnpods-intro-logo.png" alt="Logo MlnPods">
+  <h1>ADMINISTRATION</h1><p>Connecte-toi pour gérer ta boutique.</p>
+  <div class="field"><label for="email">Adresse e-mail</label><input id="email" type="email" autocomplete="username" placeholder="Adresse e-mail" required></div>
+  <div class="field"><label for="password">Mot de passe</label><input id="password" type="password" autocomplete="current-password" placeholder="Mot de passe" required></div>
+  <button class="btn btn-gold" type="submit" id="loginButton">Se connecter</button>
+  <div class="message" id="loginMessage" role="status"></div>
+ </form>
 </section>
-<section id="dashboard" class="hidden">
-<div class="panel"><h2>Menu administrateur</h2><div class="actions"><button type="button" id="showProducts">Produits</button><button type="button" class="secondary" id="showOrders">Commandes</button></div></div>
-<section id="ordersSection" class="hidden">
- <div class="panel"><h2>Récapitulatif des commandes</h2><p class="status" id="ordersMessage">Les nouvelles commandes apparaîtront ici automatiquement.</p><div class="actions"><button type="button" id="refreshOrders">Actualiser les commandes</button></div></div>
- <div id="ordersList"></div>
-</section>
-<div id="productsSection">
-<div class="panel"><h2>Gestion des produits</h2>
-<p class="status">Modifie les prix, les promotions et les stocks, puis enregistre chaque produit.</p>
-<div class="actions"><button class="secondary" id="refreshButton" type="button">Actualiser</button><button class="secondary" id="logoutButton" type="button">Déconnexion</button></div>
-<p id="message" class="status" role="status"></p></div>
-<div id="products"></div>
-<div class="panel" id="variantsPanel"><h2>Stocks des variantes</h2><p class="status">Modifie séparément les quantités de chaque modèle. Les changements sont enregistrés dans Supabase.</p><div id="variants"></div><p id="variantsMessage" class="status" role="status"></p></div>
-</div>
-</section>
+<div class="app hidden" id="app">
+ <aside class="sidebar">
+  <div class="brand"><img src="mlnpods-intro-logo.png" alt="MlnPods"><div class="brand-copy"><strong>MLNPODS</strong><small>ADMIN STUDIO</small></div></div>
+  <div class="nav-label">ESPACE DE GESTION</div>
+  <nav class="nav">
+   <button class="active" data-tab="overview"><span class="nav-ico">▦</span><span class="nav-text">Vue d'ensemble</span></button>
+   <button data-tab="orders"><span class="nav-ico">▤</span><span class="nav-text">Commandes</span></button>
+   <button data-tab="products"><span class="nav-ico">◈</span><span class="nav-text">Produits & stocks</span></button>
+   <button data-tab="sales"><span class="nav-ico">↗</span><span class="nav-text">Ventes & statistiques</span></button>
+  </nav>
+  <div class="side-foot">ESPACE SÉCURISÉ<div class="admin"><div class="avatar">A</div><div class="admin-copy">Administrateur<br><span id="adminEmail">Compte connecté</span></div></div><button class="btn btn-quiet" id="logoutButton" style="width:100%;margin-top:13px">Déconnexion</button></div>
+ </aside>
+ <main>
+  <header class="topbar"><div><div class="eyebrow">MLNPODS / ADMINISTRATION</div><h1 id="pageTitle">Vue d'ensemble</h1><p id="pageSubtitle">Retrouve l'essentiel de ta boutique en un coup d'œil.</p></div><div class="top-actions"><button class="btn btn-quiet" id="refreshAll">↻ Actualiser</button><button class="btn btn-gold" id="quickProducts">＋ Gérer les produits</button></div></header>
+
+  <section class="section active" id="overview">
+   <div class="grid stats">
+    <div class="card"><div class="stat-head">Chiffre d'affaires <span class="stat-icon">€</span></div><div class="stat-value" id="statRevenue">—</div><div class="stat-foot">Commandes non annulées</div></div>
+    <div class="card"><div class="stat-head">Commandes <span class="stat-icon">▤</span></div><div class="stat-value" id="statOrders">—</div><div class="stat-foot">Total enregistré</div></div>
+    <div class="card"><div class="stat-head">Produits en stock <span class="stat-icon">◈</span></div><div class="stat-value" id="statStock">—</div><div class="stat-foot">Unités disponibles</div></div>
+    <div class="card"><div class="stat-head">À traiter <span class="stat-icon">◷</span></div><div class="stat-value" id="statPending">—</div><div class="stat-foot">Commandes en attente</div></div>
+   </div>
+   <div class="grid cols">
+    <div class="card"><div class="card-head"><div><h2>Activité des ventes</h2><p>Basée sur les commandes enregistrées</p></div><div class="periods"><button class="active" data-period="week">7 j</button><button data-period="month">30 j</button><button data-period="year">12 m</button></div></div><div class="chart" id="overviewChart"><div class="empty" style="width:100%">Les statistiques apparaîtront après le chargement.</div></div></div>
+    <div class="card"><div class="card-head"><div><h2>Alertes de stock</h2><p>Seuil d'alerte : 5 unités ou moins</p></div><span class="pill orange" id="stockAlertCount">0 alerte</span></div><div class="alert-list" id="stockAlerts"><div class="empty">Chargement des stocks…</div></div></div>
+   </div>
+   <div class="card" style="margin-top:14px"><div class="card-head"><div><h2>Dernières commandes</h2><p>Les commandes les plus récentes</p></div><button class="btn btn-dark" data-goto="orders">Voir toutes les commandes →</button></div><div id="recentOrders" class="orders-list"><div class="empty">Chargement…</div></div></div>
+  </section>
+
+  <section class="section" id="orders">
+   <div class="card"><div class="card-head"><div><h2>Suivi des commandes</h2><p>Consulte les détails et mets à jour leur statut.</p></div><div class="export-actions"><button class="btn btn-dark" id="exportCsv">↓ Export Excel / CSV</button><button class="btn btn-gold" id="exportPdf">↓ Export PDF</button></div></div>
+    <div class="toolbar"><input class="search" id="orderSearch" placeholder="⌕ Rechercher une commande, un client…"><span class="muted" id="ordersMessage">Chargement des commandes…</span></div><div id="ordersList" class="orders-list"></div>
+   </div>
+  </section>
+
+  <section class="section" id="products">
+   <div class="card"><div class="card-head"><div><h2>Produits & stocks</h2><p>Modifie les prix, promotions et quantités depuis une seule vue.</p></div><button class="btn btn-dark" id="refreshProducts">↻ Actualiser les produits</button></div>
+    <div class="toolbar"><input class="search" id="productSearch" placeholder="⌕ Rechercher un produit…"><span class="muted" id="productsMessage">Chargement…</span></div><div class="product-list" id="productsList"></div>
+   </div>
+  </section>
+
+  <section class="section" id="sales">
+   <div class="card"><div class="card-head"><div><h2>Historique des ventes</h2><p>Chiffre d'affaires calculé à partir des commandes non annulées.</p></div><div class="periods"><button class="active" data-sales-period="week">7 jours</button><button data-sales-period="month">30 jours</button><button data-sales-period="year">12 mois</button></div></div><div class="grid stats" style="margin-bottom:12px"><div class="card"><div class="stat-head">Chiffre d'affaires</div><div class="stat-value" id="salesRevenue">—</div></div><div class="card"><div class="stat-head">Commandes prises en compte</div><div class="stat-value" id="salesCount">—</div></div><div class="card"><div class="stat-head">Panier moyen</div><div class="stat-value" id="salesAverage">—</div></div><div class="card"><div class="stat-head">Annulées</div><div class="stat-value" id="salesCancelled">—</div></div></div><div class="chart" id="salesChart"></div></div>
+   <div class="card" style="margin-top:14px"><div class="card-head"><h2>Résumé des ventes par période</h2></div><div class="table-wrap"><table class="summary-table"><thead><tr><th>Période</th><th>Commandes</th><th>Chiffre d'affaires</th></tr></thead><tbody id="salesTable"></tbody></table></div></div>
+  </section>
+  <p class="notice">Les informations affichées proviennent de ta base Supabase. Les commandes annulées sont exclues du chiffre d'affaires.</p>
+ </main>
 </div>
 <script>
 (function(){
 'use strict';
-const SUPABASE_URL='https://fvighhpzcjzioyijtmzo.supabase.co';
-const SUPABASE_KEY='sb_publishable_4-7YlOeRwbtA9GTavIxLmQ_6nAuSryg';
+const SUPABASE_URL='https://hnrnxyyijcxqczfpnsxu.supabase.co';
+const SUPABASE_KEY='sb_publishable_Q3toh3p4CUsL29ibGlBKbA_1xraZn4h';
 const $=id=>document.getElementById(id);
-let db=null;
-function show(id,msg){const el=$(id);if(el)el.textContent=msg||'';}
-function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function dateForInput(value){if(!value)return '';const d=new Date(value);if(Number.isNaN(d.getTime()))return '';const local=new Date(d.getTime()-d.getTimezoneOffset()*60000);return local.toISOString().slice(0,16);}
-function setLoggedIn(on){$('login').classList.toggle('hidden',on);$('dashboard').classList.toggle('hidden',!on);}
+let db=null,products=[],orders=[],activePeriod='week',salesPeriod='week';
+const euro=n=>Number(n||0).toLocaleString('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:2});
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const dateFmt=v=>v?new Date(v).toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'}):'Date inconnue';
+const isCancelled=o=>String(o.status||'').toLowerCase().includes('annul');
+function setMessage(id,msg){const el=$(id);if(el)el.textContent=msg||'';}
+function go(tab){document.querySelectorAll('.section').forEach(s=>s.classList.toggle('active',s.id===tab));document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));const names={overview:["Vue d'ensemble","Retrouve l'essentiel de ta boutique en un coup d'œil."],orders:["Commandes","Consulte les commandes et suis leur avancement."],products:["Produits & stocks","Gère les prix, les promotions et les quantités disponibles."],sales:["Ventes & statistiques","Analyse ton chiffre d'affaires sur différentes périodes."]};$('pageTitle').textContent=names[tab][0];$('pageSubtitle').textContent=names[tab][1];if(tab==='sales')renderSales();}
+function setLogged(on){$('login').classList.toggle('hidden',on);$('app').classList.toggle('hidden',!on);}
 async function loadProducts(){
- show('message','Chargement des produits...');
+ setMessage('productsMessage','Chargement des produits…');
  const {data,error}=await db.from('products').select('*').order('name');
- if(error){show('message','Impossible de charger les produits : '+error.message);return;}
- if(!data||!data.length){$('products').innerHTML='<div class="panel">Aucun produit trouvé.</div>';show('message','Aucun produit dans la table.');return;}
- $('products').innerHTML=data.map(p=>`<div class="product" data-id="${esc(p.id)}">
- <h2>${esc(p.name)}</h2><div class="grid">
- <div><label>Prix actuel (€)</label><input type="number" min="0" step="0.01" class="price" value="${Number(p.price??0)}"></div>
- <div><label>Ancien prix (€)</label><input type="number" min="0" step="0.01" class="old-price" value="${p.old_price??''}"></div>
- <div><label>Quantité en stock</label><input type="number" min="0" step="1" class="quantity" value="${Number(p.stock_quantity??0)}"></div>
- <div><label>Date de réapprovisionnement</label><input type="datetime-local" class="restock" value="${dateForInput(p.restock_at)}"></div>
- </div><div class="checks">
- <label><input type="checkbox" class="promo" ${p.promo_enabled?'checked':''}> Promotion activée</label>
- <label><input type="checkbox" class="stock" ${p.in_stock?'checked':''}> En stock</label>
- </div><button type="button" class="save-button">Enregistrer</button> <span class="status save-status" role="status"></span></div>`).join('');
- show('message',data.length+' produit(s) chargé(s).');
+ if(error){setMessage('productsMessage','Erreur : '+error.message);$('productsList').innerHTML='<div class="empty">Impossible de charger les produits.</div>';return;}
+ products=data||[];renderProducts();renderOverview();
 }
-const VARIANT_SEEDS=[
- {variant_id:'airpods-5',product_id:'airpods',variant_name:'AirPods 5'},
- {variant_id:'airpods-4',product_id:'airpods',variant_name:'AirPods 4'},
- {variant_id:'airpods-pro-3',product_id:'airpods',variant_name:'AirPods Pro 3'},
- {variant_id:'airpods-pro-2',product_id:'airpods',variant_name:'AirPods Pro 2'},
- {variant_id:'airpods-max-noir',product_id:'airpods-max',variant_name:'Noir'}
-];
-async function loadVariants(){
- show('variantsMessage','Chargement des stocks par variante...');
- const {data,error}=await db.from('product_variants').select('*').order('product_id').order('variant_name');
- if(error){$('variants').innerHTML='<p class="status">La table des variantes n’est pas encore configurée. Exécute le fichier SQL fourni dans Supabase, puis actualise.</p>';show('variantsMessage','Configuration nécessaire : '+error.message);return;}
- const rows=data||[];const byId=Object.fromEntries(rows.map(v=>[v.variant_id,v]));
- const groups=[{title:'AirPods',items:VARIANT_SEEDS.slice(0,4)},{title:'AirPods Max',items:VARIANT_SEEDS.slice(4)}];
- $('variants').innerHTML=groups.map(g=>`<div class="product"><h2>${esc(g.title)}</h2><div class="grid">${g.items.map(seed=>{const v=byId[seed.variant_id]||seed;return `<div><label>${esc(seed.variant_name)} — quantité en stock</label><input type="number" min="0" step="1" class="variant-quantity" data-id="${esc(seed.variant_id)}" data-product="${esc(seed.product_id)}" data-name="${esc(seed.variant_name)}" value="${Number(v.stock_quantity??0)}"></div>`;}).join('')}</div><button type="button" class="save-variants">Enregistrer ${esc(g.title)}</button><span class="status variant-save-status"></span></div>`).join('');
- show('variantsMessage','Stocks par variante chargés.');
-}
-async function saveVariants(button){
- const card=button.closest('.product'),status=card.querySelector('.variant-save-status');
- const inputs=[...card.querySelectorAll('.variant-quantity')];
- const rows=[];
- for(const input of inputs){const qty=Number(input.value);if(input.value===''||!Number.isInteger(qty)||qty<0){status.textContent='Saisis des quantités entières positives.';return;}rows.push({variant_id:input.dataset.id,product_id:input.dataset.product,variant_name:input.dataset.name,stock_quantity:qty,updated_at:new Date().toISOString()});}
- button.disabled=true;status.textContent='Enregistrement...';
- const {error}=await db.from('product_variants').upsert(rows,{onConflict:'variant_id'});
- button.disabled=false;status.textContent=error?'Erreur : '+error.message:'✓ Stocks enregistrés !';
+function renderProducts(){
+ setMessage('productsMessage',products.length+' produit(s) chargé(s).');
+ $('productsList').innerHTML=products.length?products.map(p=>{
+ const qty=Number(p.stock_quantity||0),stockClass=qty<=0?'red':qty<=5?'orange':'green';
+ return `<article class="product-row" data-id="${esc(p.id)}" data-name="${esc((p.name||'').toLowerCase())}">
+ <div class="product-thumb">🎧</div><div class="product-name"><strong>${esc(p.name)}</strong><small>${p.promo_enabled?'Promotion active':'Prix standard'} · ${p.in_stock?'Disponible':'Indisponible'}</small></div>
+ <div class="product-edit"><div><label>Prix €</label><input class="price" type="number" min="0" step=".01" value="${Number(p.price||0)}"></div><div><label>Ancien €</label><input class="old-price" type="number" min="0" step=".01" value="${p.old_price??''}"></div></div>
+ <div class="product-actions"><div><label class="muted">Stock</label><input class="quantity" type="number" min="0" step="1" value="${qty}" aria-label="Quantité en stock"></div><button class="btn btn-gold save-product">Enregistrer</button></div>
+ <div class="checks-inline"><label><input type="checkbox" class="promo" ${p.promo_enabled?'checked':''}> Promo</label><label><input type="checkbox" class="stock" ${p.in_stock?'checked':''}> En stock</label><span class="pill ${stockClass}">${qty<=0?'Rupture':qty+' disponible(s)'}</span><span class="save-status muted"></span></div>
+ </article>`;
+ }).join(''):'<div class="empty">Aucun produit trouvé.</div>';
 }
 async function saveProduct(button){
- const card=button.closest('.product');const status=card.querySelector('.save-status');
- const priceRaw=card.querySelector('.price').value;const oldRaw=card.querySelector('.old-price').value;const quantityRaw=card.querySelector('.quantity').value;
- const price=Number(priceRaw);const quantity=Number(quantityRaw);const oldPrice=oldRaw===''?null:Number(oldRaw);
- if(priceRaw===''||!Number.isFinite(price)||price<0||!Number.isInteger(quantity)||quantity<0||(oldPrice!==null&&(!Number.isFinite(oldPrice)||oldPrice<0))){status.textContent='Vérifie les prix et la quantité.';return;}
- const restockRaw=card.querySelector('.restock').value;let restockAt=null;
- if(restockRaw){const d=new Date(restockRaw);if(Number.isNaN(d.getTime())){status.textContent='Date de réapprovisionnement invalide.';return;}restockAt=d.toISOString();}
- const changes={price,old_price:oldPrice,promo_enabled:card.querySelector('.promo').checked,stock_quantity:quantity,in_stock:card.querySelector('.stock').checked,restock_at:restockAt,updated_at:new Date().toISOString()};
- button.disabled=true;status.textContent='Enregistrement...';
- const {error}=await db.from('products').update(changes).eq('id',card.dataset.id);
- button.disabled=false;status.textContent=error?'Erreur : '+error.message:'✓ Enregistré !';
+ const row=button.closest('.product-row'),p=products.find(x=>String(x.id)===row.dataset.id),status=row.querySelector('.save-status');
+ const priceRaw=row.querySelector('.price').value,oldRaw=row.querySelector('.old-price').value,qtyRaw=row.querySelector('.quantity').value;
+ const price=Number(priceRaw),old=oldRaw===''?null:Number(oldRaw),qty=Number(qtyRaw);
+ if(priceRaw===''||!Number.isFinite(price)||price<0||!Number.isInteger(qty)||qty<0||(old!==null&&(!Number.isFinite(old)||old<0))){status.textContent='Vérifie les valeurs.';return;}
+ const changes={price,old_price:old,promo_enabled:row.querySelector('.promo').checked,stock_quantity:qty,in_stock:row.querySelector('.stock').checked,updated_at:new Date().toISOString()};
+ button.disabled=true;status.textContent='Enregistrement…';
+ const {error}=await db.from('products').update(changes).eq('id',row.dataset.id);
+ button.disabled=false;
+ if(error){status.textContent='Erreur : '+error.message;return;}
+ status.textContent='✓ Enregistré';Object.assign(p||{},changes);renderOverview();
 }
-async function login(event){event.preventDefault();const button=$('loginButton');button.disabled=true;show('loginMessage','Connexion en cours...');
- try{const {data,error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;if(!data.session)throw new Error('Aucune session reçue.');setLoggedIn(true);await loadProducts();await loadVariants();}
- catch(e){show('loginMessage','Erreur : '+(e.message||'Connexion impossible.'));}
- finally{button.disabled=false;}}
-async function logout(){try{await db.auth.signOut();}catch(e){console.error(e);}setLoggedIn(false);$('password').value='';show('loginMessage','Déconnecté.');}
 async function loadOrders(){
- show('ordersMessage','Chargement des commandes...');
+ setMessage('ordersMessage','Chargement des commandes…');
  const {data,error}=await db.from('orders').select('*').order('created_at',{ascending:false});
- if(error){show('ordersMessage','Impossible de charger les commandes : '+error.message);return;}
- if(!data||!data.length){$('ordersList').innerHTML='<div class="panel">Aucune commande pour le moment.</div>';show('ordersMessage','0 commande.');return;}
- $('ordersList').innerHTML=data.map(o=>{
-  const items=Array.isArray(o.items)?o.items:[];
-  const lines=items.map(i=>`${Number(i.quantity)||0} × ${esc(i.name)} — ${(Number(i.line_total)||0).toLocaleString('fr-FR')} €`).join('\n');
-  const date=o.created_at?new Date(o.created_at).toLocaleString('fr-FR'):'';
-  const total=o.total===null?'Sur devis':Number(o.total||0).toLocaleString('fr-FR')+' €';
-  return `<article class="order-card" data-order-id="${esc(o.id)}"><h3>Commande n°${esc(o.order_number??'—')}</h3><div class="order-meta">${esc(date)} · ${esc(o.delivery_mode||'Mode non précisé')}</div><pre>${lines}\n\nSous-total : ${Number(o.subtotal||0).toLocaleString('fr-FR')} €\nLivraison : ${o.delivery_fee===null?'Sur devis':Number(o.delivery_fee||0).toLocaleString('fr-FR')+' €'}\nTéléphone : ${esc(o.phone||'Non renseigné')}\nAdresse : ${esc(o.address||'Non renseignée')}\nE-mail : ${esc(o.email||'Non renseigné')}\nPaiement : ${esc(o.payment_method||'')}</pre><div class="order-total">Total : ${esc(total)}</div><label>Statut de la commande</label><select class="order-status"><option ${o.status==='En attente'?'selected':''}>En attente</option><option ${o.status==='Confirmée'?'selected':''}>Confirmée</option><option ${o.status==='En préparation'?'selected':''}>En préparation</option><option ${o.status==='Expédiée'?'selected':''}>Expédiée</option><option ${o.status==='Terminée'?'selected':''}>Terminée</option><option ${o.status==='Annulée'?'selected':''}>Annulée</option></select><button type="button" class="update-order">Enregistrer le statut</button><span class="status order-save-status"></span></article>`;
- }).join('');
- show('ordersMessage',data.length+' commande(s) enregistrée(s).');
+ if(error){setMessage('ordersMessage','Erreur : '+error.message);$('ordersList').innerHTML='<div class="empty">Impossible de charger les commandes.</div>';return;}
+ orders=data||[];setMessage('ordersMessage',orders.length+' commande(s) enregistrée(s).');renderOrders();renderOverview();renderSales();
+}
+function orderLines(o){
+ const items=Array.isArray(o.items)?o.items:[];
+ return items.map(i=>`${Number(i.quantity)||0} × ${i.name||i.product_name||'Produit'} — ${euro(i.line_total??((Number(i.price)||0)*(Number(i.quantity)||0)))}`).join('\n');
+}
+function orderCard(o,compact=false){
+ const total=o.total===null||o.total===undefined?'Sur devis':euro(o.total);
+ const detail=[orderLines(o),`Sous-total : ${euro(o.subtotal)}`,`Livraison : ${o.delivery_fee==null?'Sur devis':euro(o.delivery_fee)}`,`Téléphone : ${o.phone||'Non renseigné'}`,`Adresse : ${o.address||'Non renseignée'}`,`E-mail : ${o.email||'Non renseigné'}`,`Paiement : ${o.payment_method||'Non précisé'}`].filter(Boolean).join('\n');
+ const status=o.status||'En attente';
+ return `<article class="order-card" data-order-id="${esc(o.id)}"><div class="order-head"><div><h3>Commande n°${esc(o.order_number??'—')}</h3><div class="order-meta">${esc(dateFmt(o.created_at))} · ${esc(o.delivery_mode||'Livraison non précisée')}</div></div><span class="pill ${isCancelled(o)?'red':status==='Terminée'?'green':status==='En attente'?'orange':''}">${esc(status)}</span></div>
+ <div class="order-details">${esc(detail)}</div><div class="order-bottom"><div class="order-total">${esc(total)}</div>${compact?'':`<div class="order-controls"><select class="order-status" aria-label="Statut de commande">${['En attente','Confirmée','En préparation','Expédiée','Terminée','Annulée'].map(x=>`<option ${status===x?'selected':''}>${x}</option>`).join('')}</select><button type="button" class="btn btn-gold update-order">Enregistrer</button><span class="save-status muted"></span></div>`}</div></article>`;
+}
+function renderOrders(){
+ const q=($('orderSearch')?.value||'').toLowerCase();
+ const filtered=orders.filter(o=>[o.order_number,o.phone,o.email,o.address,o.status,orderLines(o)].join(' ').toLowerCase().includes(q));
+ $('ordersList').innerHTML=filtered.length?filtered.map(o=>orderCard(o)).join(''):'<div class="empty">Aucune commande ne correspond à cette recherche.</div>';
+ $('recentOrders').innerHTML=orders.slice(0,3).length?orders.slice(0,3).map(o=>orderCard(o,true)).join(''):'<div class="empty">Aucune commande pour le moment.</div>';
 }
 async function updateOrder(button){
- const card=button.closest('.order-card'),status=card.querySelector('.order-save-status');
- button.disabled=true;status.textContent='Enregistrement...';
- const {error}=await db.from('orders').update({status:card.querySelector('.order-status').value}).eq('id',card.dataset.orderId);
- button.disabled=false;status.textContent=error?'Erreur : '+error.message:'✓ Statut mis à jour';
+ const card=button.closest('.order-card'),status=card.querySelector('.save-status');button.disabled=true;status.textContent='Enregistrement…';
+ const newStatus=card.querySelector('.order-status').value;
+ const {error}=await db.from('orders').update({status:newStatus}).eq('id',card.dataset.orderId);
+ button.disabled=false;if(error){status.textContent='Erreur : '+error.message;return;}
+ const found=orders.find(o=>String(o.id)===card.dataset.orderId);if(found)found.status=newStatus;
+ status.textContent='✓ Mis à jour';renderOrders();renderOverview();renderSales();
 }
+function renderOverview(){
+ const valid=orders.filter(o=>!isCancelled(o));
+ $('statRevenue').textContent=euro(valid.reduce((a,o)=>a+Number(o.total??o.subtotal??0),0));
+ $('statOrders').textContent=orders.length;
+ $('statPending').textContent=orders.filter(o=>String(o.status||'En attente').toLowerCase()==='en attente').length;
+ $('statStock').textContent=products.reduce((a,p)=>a+Math.max(0,Number(p.stock_quantity)||0),0);
+ const low=products.filter(p=>!p.in_stock||Number(p.stock_quantity||0)<=5);
+ $('stockAlertCount').textContent=low.length+' alerte(s)';
+ $('stockAlerts').innerHTML=low.length?low.map(p=>{const q=Number(p.stock_quantity||0);return `<div class="alert-row"><div class="alert-icon ${q<=0?'danger':''}">${q<=0?'!':'⚠'}</div><div style="flex:1"><strong>${esc(p.name)}</strong><small>${q<=0?'Produit en rupture':q+' unité(s) restante(s)'}</small></div><span class="pill ${q<=0?'red':'orange'}">${q<=0?'Rupture':'Stock faible'}</span></div>`}).join(''):'<div class="empty">Tous les stocks sont au-dessus du seuil d’alerte.</div>';
+ renderChart('overviewChart',activePeriod);
+}
+function buckets(period){
+ const now=new Date(),out=[];
+ if(period==='week'){for(let i=6;i>=0;i--){const d=new Date(now);d.setHours(0,0,0,0);d.setDate(d.getDate()-i);out.push({start:d,end:new Date(d.getTime()+86400000),label:d.toLocaleDateString('fr-FR',{weekday:'short'})});}}
+ else if(period==='month'){for(let i=29;i>=0;i--){const d=new Date(now);d.setHours(0,0,0,0);d.setDate(d.getDate()-i);out.push({start:d,end:new Date(d.getTime()+86400000),label:d.getDate()+'/'+(d.getMonth()+1)});}}
+ else {for(let i=11;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);out.push({start:d,end:new Date(d.getFullYear(),d.getMonth()+1,1),label:d.toLocaleDateString('fr-FR',{month:'short'})});}}
+ return out;
+}
+function amount(o){return Number(o.total??o.subtotal??0)||0;}
+function renderChart(target,period){
+ const el=$(target);if(!el)return;const bs=buckets(period),valid=orders.filter(o=>!isCancelled(o));
+ const vals=bs.map(b=>valid.filter(o=>{const d=new Date(o.created_at);return !Number.isNaN(d.getTime())&&d>=b.start&&d<b.end;}).reduce((a,o)=>a+amount(o),0));
+ const max=Math.max(1,...vals);
+ el.innerHTML=bs.map((b,i)=>`<div class="bar-col"><div class="bar-value">${vals[i]?euro(vals[i]):''}</div><div class="bar" title="${esc(b.label)} : ${euro(vals[i])}" style="height:${Math.max(2,vals[i]/max*78)}%"></div>${esc(b.label)}</div>`).join('');
+}
+function renderSales(){
+ const bs=buckets(salesPeriod),valid=orders.filter(o=>!isCancelled(o)),cancelled=orders.filter(isCancelled);
+ const rows=bs.map(b=>{const found=valid.filter(o=>{const d=new Date(o.created_at);return !Number.isNaN(d.getTime())&&d>=b.start&&d<b.end;});return {label:b.label,orders:found.length,revenue:found.reduce((a,o)=>a+amount(o),0)};});
+ const revenue=rows.reduce((a,r)=>a+r.revenue,0),count=rows.reduce((a,r)=>a+r.orders,0);
+ $('salesRevenue').textContent=euro(revenue);$('salesCount').textContent=count;$('salesAverage').textContent=euro(count?revenue/count:0);$('salesCancelled').textContent=cancelled.length;
+ $('salesChart').innerHTML=rows.map(r=>`<div class="bar-col"><div class="bar-value">${r.revenue?euro(r.revenue):''}</div><div class="bar" title="${esc(r.label)} : ${euro(r.revenue)}" style="height:${Math.max(2,r.revenue/Math.max(1,...rows.map(x=>x.revenue))*78)}%"></div>${esc(r.label)}</div>`).join('');
+ $('salesTable').innerHTML=rows.slice().reverse().map(r=>`<tr><td>${esc(r.label)}</td><td>${r.orders}</td><td>${euro(r.revenue)}</td></tr>`).join('');
+}
+function csvCell(v){return '"'+String(v??'').replace(/"/g,'""')+'"';}
+function exportCsv(){
+ const header=['Numero','Date','Statut','Produits','Sous-total','Livraison','Total','Mode de livraison','Telephone','Email','Adresse','Paiement'];
+ const rows=orders.map(o=>[o.order_number,dateFmt(o.created_at),o.status,orderLines(o).replace(/\n/g,' | '),o.subtotal,o.delivery_fee,o.total,o.delivery_mode,o.phone,o.email,o.address,o.payment_method]);
+ const csv='\ufeff'+[header,...rows].map(r=>r.map(csvCell).join(';')).join('\r\n');
+ const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='mlnpods-commandes-'+new Date().toISOString().slice(0,10)+'.csv';a.click();URL.revokeObjectURL(url);
+}
+function exportPdf(){go('orders');window.print();}
+async function refreshAll(){await Promise.all([loadProducts(),loadOrders()]);}
+async function login(event){
+ event.preventDefault();const b=$('loginButton');b.disabled=true;setMessage('loginMessage','Connexion en cours…');
+ try{const {data,error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;if(!data.session)throw new Error('Aucune session reçue.');$('adminEmail').textContent=$('email').value.trim();setLogged(true);await refreshAll();}
+ catch(e){setMessage('loginMessage','Erreur : '+(e.message||'Connexion impossible.'));}
+ finally{b.disabled=false;}
+}
+async function logout(){await db.auth.signOut();setLogged(false);$('password').value='';setMessage('loginMessage','Déconnecté.');}
 async function init(){
- if(!window.supabase||typeof window.supabase.createClient!=='function'){show('loginMessage','La bibliothèque Supabase ne s’est pas chargée. Recharge la page ou réessaie plus tard.');return;}
+ if(!window.supabase?.createClient){setMessage('loginMessage','Supabase ne s’est pas chargé. Vérifie ta connexion puis recharge.');return;}
  db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
- $('loginForm').addEventListener('submit',login);
- $('refreshButton').addEventListener('click',async()=>{await loadProducts();await loadVariants();});
- $('refreshOrders').addEventListener('click',loadOrders);
- $('showProducts').addEventListener('click',()=>{$('productsSection').classList.remove('hidden');$('ordersSection').classList.add('hidden');$('showProducts').classList.remove('secondary');$('showOrders').classList.add('secondary');});
- $('showOrders').addEventListener('click',async()=>{$('productsSection').classList.add('hidden');$('ordersSection').classList.remove('hidden');$('showOrders').classList.remove('secondary');$('showProducts').classList.add('secondary');await loadOrders();});
- $('logoutButton').addEventListener('click',logout);
- $('products').addEventListener('click',e=>{const b=e.target.closest('.save-button');if(b)saveProduct(b);});
- $('variants').addEventListener('click',e=>{const b=e.target.closest('.save-variants');if(b)saveVariants(b);});
+ $('loginForm').addEventListener('submit',login);$('logoutButton').addEventListener('click',logout);
+ $('refreshAll').addEventListener('click',refreshAll);$('refreshProducts').addEventListener('click',loadProducts);
+ $('quickProducts').addEventListener('click',()=>go('products'));
+ document.querySelectorAll('.nav button').forEach(b=>b.addEventListener('click',()=>go(b.dataset.tab)));
+ document.querySelectorAll('[data-goto]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.goto)));
+ $('productsList').addEventListener('click',e=>{const b=e.target.closest('.save-product');if(b)saveProduct(b);});
  $('ordersList').addEventListener('click',e=>{const b=e.target.closest('.update-order');if(b)updateOrder(b);});
- try{const {data,error}=await db.auth.getSession();if(error)throw error;if(data.session){setLoggedIn(true);await loadProducts();await loadVariants();}}
- catch(e){show('loginMessage','Erreur de session : '+e.message);}
+ $('orderSearch').addEventListener('input',renderOrders);
+ $('productSearch').addEventListener('input',e=>{const q=e.target.value.toLowerCase();document.querySelectorAll('.product-row').forEach(r=>r.style.display=r.dataset.name.includes(q)?'grid':'none');});
+ $('exportCsv').addEventListener('click',exportCsv);$('exportPdf').addEventListener('click',exportPdf);
+ document.querySelectorAll('[data-period]').forEach(b=>b.addEventListener('click',()=>{activePeriod=b.dataset.period;document.querySelectorAll('[data-period]').forEach(x=>x.classList.toggle('active',x===b));renderChart('overviewChart',activePeriod);}));
+ document.querySelectorAll('[data-sales-period]').forEach(b=>b.addEventListener('click',()=>{salesPeriod=b.dataset.salesPeriod;document.querySelectorAll('[data-sales-period]').forEach(x=>x.classList.toggle('active',x===b));renderSales();}));
+ try{const {data,error}=await db.auth.getSession();if(error)throw error;if(data.session){$('adminEmail').textContent=data.session.user?.email||'Compte connecté';setLogged(true);await refreshAll();}}
+ catch(e){setMessage('loginMessage','Erreur de session : '+e.message);}
 }
 document.addEventListener('DOMContentLoaded',init);
 })();
