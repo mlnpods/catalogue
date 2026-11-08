@@ -59,8 +59,19 @@
    return `<div class="cart-line mln-cart-line"><img src="${esc(it.image||'')}" alt="" style="width:58px;height:58px;object-fit:cover;border-radius:9px;background:#171717" onerror="this.style.display='none'"><div><strong>${esc(it.name)}</strong><small>${money(it.price)} / unité · ${esc(stockLabel(it))}</small><div class="qty-controls mln-qty-controls"><button type="button" data-cart-minus="${esc(sku)}" aria-label="Diminuer">−</button><span>${q}</span><button type="button" data-cart-plus="${esc(sku)}" aria-label="Augmenter" ${q>=max?'disabled':''}>+</button><button type="button" data-cart-remove="${esc(sku)}">Supprimer</button></div></div><strong>${money(Number(it.price||0)*q)}</strong></div>`;
   }).join(''):'<p class="notice mln-empty">Ton panier est vide pour le moment.</p>';}
   const sub=$('cartSubtotal');if(sub)sub.textContent=money(subtotal());
+  if($('cartSubtotalCheckout'))$('cartSubtotalCheckout').textContent=money(subtotal());
+  const currentMode=$('deliveryMode')?.value;
+  const currentFee=currentMode?deliveryFee(currentMode,subtotal()):null;
+  if($('checkoutDeliveryFee'))$('checkoutDeliveryFee').textContent=currentFee===null?'À choisir':money(currentFee);
+  if($('checkoutGrandTotal'))$('checkoutGrandTotal').textContent=currentFee===null?'—':money(subtotal()+currentFee);
   const start=$('checkoutStart');if(start)start.disabled=!entries().length;
   const productStart=$('mlnCheckout');if(productStart)productStart.disabled=!entries().length;
+  document.querySelectorAll('[data-product-variant],[data-home-variant]').forEach(btn=>{
+   const id=btn.dataset.productVariant||btn.dataset.homeVariant;
+   const v=variants[id];
+   btn.disabled=!!v&&Number(v.stock_quantity||0)<=0;
+   btn.title=v?`${Number(v.stock_quantity||0)} en stock`:'Stock indisponible';
+  });
   const status=$('mlnVariantStock');
   if(status){
    const id=document.body.dataset.variantId||$('mlnVariantSelect')?.value;
@@ -80,31 +91,66 @@
  }
  function deliveryFee(mode,sub){if(mode==='besancon')return sub>=30?0:5;if(mode==='saint-claude')return 0;if(mode==='relay')return 5;if(mode==='home')return 10;return 0;}
  function deliveryLabel(mode){return ({besancon:'Livraison à Besançon','saint-claude':'Retrait secteur Saint-Claude',relay:'Mondial Relay',home:'Livraison à domicile'})[mode]||'À choisir';}
- function addressValue(mode){if(mode==='relay')return `Point relais : ${$('relayName')?.value.trim()} — ${$('relayAddress')?.value.trim()}`;if(mode==='saint-claude')return 'Retrait secteur Saint-Claude, Besançon';return $('customerAddress')?.value.trim()||null;}
- function summary(order){const mode=$('deliveryMode')?.value,sub=subtotal(),fee=deliveryFee(mode,sub);const lines=['🛍️ COMMANDE MLNPODS','',...entries().map(([,it])=>`• ${it.quantity} × ${it.name} — ${money(it.price*it.quantity)}`),'',`🧾 Sous-total produits : ${money(sub)}`,`🚚 Livraison : ${deliveryLabel(mode)} — ${money(fee)}`,`💶 TOTAL : ${money(sub+fee)}`,'',`📞 Téléphone : ${$('customerPhone')?.value.trim()||''}`];const a=addressValue(mode);if(a)lines.push(mode==='relay'?'📦 Point relais : '+a:'🏠 Adresse / retrait : '+a);if($('customerEmail')?.value.trim())lines.push('✉️ E-mail : '+$('customerEmail').value.trim());lines.push('','Paiement : à convenir avec MlnPods.');if(order?.order_number)lines.push('','Référence commande : '+order.order_number);return lines.join('\n');}
+ function addressValue(mode){
+  if(mode==='relay')return `Point relais : ${$('relayName')?.value.trim()} — ${$('relayAddress')?.value.trim()}`;
+  if(mode==='saint-claude')return 'Retrait secteur Saint-Claude, Besançon';
+  if(['besancon','home'].includes(mode)){
+   const no=$('customerStreetNumber')?.value.trim()||'';
+   const street=$('customerStreet')?.value.trim()||'';
+   const complement=$('customerAddressComplement')?.value.trim()||'';
+   const postcode=$('customerPostcode')?.value.trim()||'';
+   const city=$('customerCity')?.value.trim()||'';
+   return [no,street].filter(Boolean).join(' ') + (complement?`, ${complement}`:'') + `, ${postcode} ${city}`.trim();
+  }
+  return '';
+ }
+ function summary(order){
+  const mode=$('deliveryMode')?.value,sub=subtotal(),fee=deliveryFee(mode,sub);
+  const first=$('customerFirstName')?.value.trim()||'',last=$('customerLastName')?.value.trim()||'';
+  const lines=['🎧 NOUVELLE COMMANDE — MLNPODS','',`👤 Client : ${first} ${last}`,'', '🛍️ PRODUITS',...entries().map(([,it])=>`• ${it.quantity} × ${it.name} — ${money(it.price)} / unité = ${money(it.price*it.quantity)}`),'',`🧾 Sous-total : ${money(sub)}`,`🚚 Livraison : ${deliveryLabel(mode)} — ${money(fee)}`,`💶 TOTAL : ${money(sub+fee)}`,'',`📞 Téléphone : ${$('customerPhone')?.value.trim()||''}`];
+  const a=addressValue(mode);if(a)lines.push(mode==='relay'?'📦 Point relais : '+a:'🏠 Adresse / retrait : '+a);
+  if($('customerEmail')?.value.trim())lines.push('✉️ E-mail : '+$('customerEmail').value.trim());
+  if($('customerSnapchat')?.value.trim())lines.push('👻 Snapchat : '+$('customerSnapchat').value.trim());
+  lines.push('','💬 Commande à confirmer sur WhatsApp.','Paiement : à convenir avec MlnPods.');
+  if(order?.order_number)lines.push('','Référence : '+order.order_number);
+  return lines.join('\\n');
+ }
  function setRequiredGroup(id,required){const group=$(id);if(!group)return;group.hidden=!required;group.querySelectorAll('input,textarea').forEach(x=>{x.required=required;if(!required)x.value='';});}
- function validate(){const mode=$('deliveryMode')?.value,form=$('checkoutForm');if(!mode){alert('Choisis un mode de livraison.');return false;}if(!form.reportValidity())return false;if(!$('acceptConditions')?.checked){alert('Tu dois accepter les conditions avant de continuer.');return false;}if(!entries().length){alert('Ton panier est vide.');return false;}if(!stockReady){alert('Impossible de vérifier le stock. Actualise la page et réessaie.');return false;}for(const [,it] of entries()){if(it.quantity>available(it)){alert(`Stock insuffisant pour ${it.name}. Stock disponible : ${available(it)}.`);return false;}}return true;}
+ function validate(){
+  const mode=$('deliveryMode')?.value,form=$('checkoutForm');
+  if(!mode){alert('Choisis un mode de livraison.');return false;}
+  if(!form.reportValidity())return false;
+  const city=($('customerCity')?.value||'').trim().toLocaleLowerCase('fr-FR');
+  if(mode==='besancon'&&city!=='besançon'&&city!=='besancon'){alert('La livraison locale est réservée à Besançon.');return false;}
+  if(mode==='home'&&(city==='besançon'||city==='besancon')){alert('Pour Besançon, choisis « Livraison à Besançon » ou le retrait secteur Saint-Claude.');return false;}
+  if(!$('acceptConditions')?.checked){alert('Tu dois accepter les conditions avant de continuer.');return false;}
+  if(!entries().length){alert('Ton panier est vide.');return false;}
+  if(!stockReady){alert('Impossible de vérifier le stock. Actualise la page et réessaie.');return false;}
+  for(const [,it] of entries()){if(it.quantity>available(it)){alert(`Stock insuffisant pour ${it.name}. Stock disponible : ${available(it)}.`);return false;}}
+  return true;
+ }
  async function placeOrder(){
   if(savedOrder)return savedOrder;
   if(!db)throw new Error('Connexion à la base de commandes indisponible.');
   const mode=$('deliveryMode').value;
   const payload=entries().map(([,it])=>({product_id:it.product_id,variant_id:it.variant_id||null,quantity:Number(it.quantity)}));
-  const {data,error}=await db.rpc('mlnpods_place_order',{p_items:payload,p_delivery_code:mode,p_address:addressValue(mode),p_phone:$('customerPhone').value.trim(),p_email:$('customerEmail').value.trim()||null});
+  const {data,error}=await db.rpc('mlnpods_place_order',{p_items:payload,p_delivery_code:mode,p_address:`${$('customerFirstName').value.trim()} ${$('customerLastName').value.trim()} — ${addressValue(mode)}`,p_phone:$('customerPhone').value.trim(),p_email:$('customerEmail').value.trim()||null});
   if(error)throw new Error(error.message||'La commande n’a pas pu être enregistrée.');
   if(!data?.success)throw new Error(data?.message||'La commande n’a pas pu être enregistrée.');
   savedOrder=data;
   await loadStock();
   return data;
  }
- async function send(channel){
+ async function send(){
   if(!validate())return;
-  const buttons=[$('sendWhatsApp'),$('sendSnap')].filter(Boolean);buttons.forEach(b=>b.disabled=true);
+  const button=$('sendWhatsApp');if(button)button.disabled=true;
   try{
-   const order=await placeOrder();const text=summary(order);$('orderSummary').value=text;
-   if(channel==='wa')window.location.href='https://wa.me/'+WHATSAPP+'?text='+encodeURIComponent(text);
-   else {try{await navigator.clipboard.writeText(text);alert('Commande enregistrée et récapitulatif copié. Colle-le dans ta conversation Snapchat.');}catch(e){alert('Commande enregistrée. Copie le récapitulatif affiché avant de passer sur Snapchat.');}window.location.href=SNAPCHAT;}
-  }catch(e){alert('Commande non enregistrée : '+(e.message||'Erreur inconnue')+'\nAucun stock n’a été réservé si la validation a échoué.');}
-  finally{buttons.forEach(b=>b.disabled=false);}
+   const order=await placeOrder();
+   const text=summary(order);$('orderSummary').value=text;
+   window.location.href='https://wa.me/'+WHATSAPP+'?text='+encodeURIComponent(text);
+  }catch(e){
+   alert('Impossible de préparer la commande : '+(e.message||'Erreur inconnue')+'\\nRéessaie dans un instant.');
+  }finally{if(button)button.disabled=false;}
  }
  function init(){
   if(!document.getElementById('mln-cart-layout-style')){const st=document.createElement('style');st.id='mln-cart-layout-style';st.textContent='.mln-cart-line{grid-template-columns:58px minmax(0,1fr) auto!important;align-items:center}.mln-qty-controls button:disabled{opacity:.35;cursor:not-allowed}.checkout-form[hidden]{display:none!important}';document.head.appendChild(st);}
@@ -116,6 +162,17 @@
   $('cartItems')?.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const sku=b.dataset.cartPlus||b.dataset.cartMinus||b.dataset.cartRemove;if(!sku)return;const it=cart[sku];if(!it)return;if(b.dataset.cartPlus){if(it.quantity<available(it))it.quantity++;else alert('Stock maximum atteint.');}if(b.dataset.cartMinus)it.quantity=Math.max(0,it.quantity-1);if(b.dataset.cartRemove||it.quantity===0)delete cart[sku];save();});
   document.querySelectorAll('.add-cart').forEach(btn=>btn.addEventListener('click',()=>{const card=btn.closest('article.product');const name=btn.dataset.product||card?.querySelector('h3')?.textContent.trim();const productId=btn.dataset.productId||({'AirPods Max':'airpods-max','AirPods':'airpods','Watch':'watch','Chargeur rapide':'chargeur-rapide'}[name]);const variantId=btn.dataset.variantId||(name==='AirPods'?card?.querySelector('.home-variant')?.value:null);const variantName=variantId?({'airpods-5':'AirPods 5','airpods-4':'AirPods 4','airpods-pro-3':'AirPods Pro 3','airpods-pro-2':'AirPods Pro 2','airpods-max-noir':'Noir'}[variantId]):null;const price=Number((card?.querySelector('.current-price')?.textContent||'').replace(',','.').replace(/[^\d.]/g,''))||Number(products[productId]?.price||0);const item={product_id:productId,variant_id:variantId||null,name:variantName?(name==='AirPods Max'?'AirPods Max - Noir':variantName):name,price,image:productImage(card)};if(addItem(item,1))$('cartOverlay')?.classList.add('open');}));
   $('mlnVariantSelect')?.addEventListener('change',render);
+  document.querySelectorAll('[data-product-variant]').forEach(btn=>btn.addEventListener('click',()=>{
+   $('mlnVariantSelect').value=btn.dataset.productVariant;
+   document.body.dataset.variantId=btn.dataset.productVariant;
+   document.querySelectorAll('[data-product-variant]').forEach(x=>x.setAttribute('aria-pressed',String(x===btn)));
+   render();
+  }));
+  document.querySelectorAll('[data-home-variant]').forEach(btn=>btn.addEventListener('click',()=>{
+   const card=btn.closest('article.product');const hidden=card?.querySelector('.home-variant');
+   if(hidden)hidden.value=btn.dataset.homeVariant;
+   card?.querySelectorAll('[data-home-variant]').forEach(x=>x.setAttribute('aria-pressed',String(x===btn)));
+  }));
   const qty=$('mlnProductQty');if(qty){$('mlnQtyMinus')?.addEventListener('click',()=>qty.value=Math.max(1,(Number(qty.value)||1)-1));$('mlnQtyPlus')?.addEventListener('click',()=>qty.value=Math.min(99,(Number(qty.value)||1)+1));qty.addEventListener('change',()=>qty.value=Math.max(1,Math.min(99,Math.floor(Number(qty.value)||1))));$('mlnAddToCart')?.addEventListener('click',()=>{const item=getCurrentProduct(),q=Math.max(1,Math.floor(Number(qty.value)||1));if(addItem(item,q))$('cartOverlay')?.classList.add('open');});}
   function openCheckout(){
    $('checkoutForm').hidden=false;
@@ -127,9 +184,24 @@
    if(!entries().length){alert('Ajoute d’abord un produit au panier.');return;}
    openCheckout();
   });
-  $('deliveryMode')?.addEventListener('change',()=>{const m=$('deliveryMode').value;setRequiredGroup('addressGroup',['besancon','home'].includes(m));setRequiredGroup('relayGroup',m==='relay');setRequiredGroup('phoneGroup',!!m);setRequiredGroup('emailGroup',false);$('orderSummary').value='';});
-  $('sendWhatsApp')?.addEventListener('click',()=>send('wa'));$('sendSnap')?.addEventListener('click',()=>send('snap'));
-  $('copyOrder')?.addEventListener('click',async()=>{const text=$('orderSummary').value||summary(savedOrder);try{await navigator.clipboard.writeText(text);alert('Récapitulatif copié !');}catch(e){$('orderSummary').focus();$('orderSummary').select();alert('Sélectionne le texte puis copie-le.');}});
+  function refreshCheckoutTotals(){
+   const sub=subtotal(),mode=$('deliveryMode')?.value,fee=mode?deliveryFee(mode,sub):null;
+   if($('cartSubtotalCheckout'))$('cartSubtotalCheckout').textContent=money(sub);
+   if($('checkoutDeliveryFee'))$('checkoutDeliveryFee').textContent=fee===null?'À choisir':money(fee);
+   if($('checkoutGrandTotal'))$('checkoutGrandTotal').textContent=fee===null?'—':money(sub+fee);
+  }
+  document.querySelectorAll('[data-delivery-mode]').forEach(btn=>btn.addEventListener('click',()=>{
+   const mode=btn.dataset.deliveryMode;$('deliveryMode').value=mode;
+   document.querySelectorAll('[data-delivery-mode]').forEach(x=>x.setAttribute('aria-pressed',String(x===btn)));
+   const address=['besancon','home'].includes(mode),relay=mode==='relay';
+   $('addressGroup').hidden=!address;$('relayGroup').hidden=!relay;
+   ['customerStreetNumber','customerStreet','customerPostcode','customerCity'].forEach(id=>{const el=$(id);if(el)el.required=address;});
+   ['relayName','relayAddress'].forEach(id=>{const el=$(id);if(el)el.required=relay;});
+   $('orderSummary').value='';refreshCheckoutTotals();
+  }));
+  $('sendWhatsApp')?.addEventListener('click',send);
+  ['customerFirstName','customerLastName','customerPhone','customerEmail','customerSnapchat','customerStreetNumber','customerStreet','customerAddressComplement','customerPostcode','customerCity','relayName','relayAddress'].forEach(id=>$(id)?.addEventListener('input',()=>{$('orderSummary').value='';}));
+  refreshCheckoutTotals();
   window.addEventListener('storage',e=>{if(e.key===CART_KEY){cart=readCart();render();}});
   render();loadStock();
  }
