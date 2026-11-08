@@ -144,6 +144,29 @@ main{width:100%;max-width:1600px;margin:0 auto;padding:29px clamp(15px,3vw,42px)
    </div>
   </section>
 
+  <section class="section" id="promos">
+   <div class="card">
+    <div class="card-head"><div><h2>Créer un code promo</h2><p>Configure une réduction en pourcentage ou en euros à appliquer dans le panier.</p></div><button class="btn btn-dark" id="refreshPromos">↻ Actualiser les codes</button></div>
+    <form id="promoForm" class="promo-admin-form">
+     <label>Code promo<input id="promoAdminCode" type="text" maxlength="32" placeholder="EXEMPLE10" required autocomplete="off"></label>
+     <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px">
+      <label>Type de réduction<select id="promoAdminType"><option value="percent">Pourcentage (%)</option><option value="fixed">Montant fixe (€)</option></select></label>
+      <label>Valeur de la réduction<input id="promoAdminValue" type="number" min="0.01" step="0.01" placeholder="10" required></label>
+      <label>Panier minimum (€)<input id="promoAdminMin" type="number" min="0" step="0.01" value="0"></label>
+      <label>Nombre maximum d'utilisations<input id="promoAdminMax" type="number" min="1" step="1" placeholder="Illimité"></label>
+      <label>Date d'expiration (facultatif)<input id="promoAdminExpiry" type="datetime-local"></label>
+     </div>
+     <label style="display:flex;align-items:center;gap:9px"><input id="promoAdminActive" type="checkbox" checked style="width:auto"> Code actif dès sa création</label>
+     <div><button class="btn btn-gold" id="savePromo" type="submit">＋ Créer le code promo</button></div>
+     <p class="muted" id="promoAdminMessage" aria-live="polite">Remplis les champs puis crée ton premier code promo.</p>
+    </form>
+   </div>
+   <div class="card" style="margin-top:14px">
+    <div class="card-head"><div><h2>Mes codes promo</h2><p>Active, désactive ou supprime tes codes.</p></div></div>
+    <div id="promoList"><div class="empty">Chargement des codes promo…</div></div>
+   </div>
+  </section>
+
   <section class="section" id="sales">
    <div class="card"><div class="card-head"><div><h2>Historique des ventes</h2><p>Chiffre d'affaires calculé à partir des commandes non annulées.</p></div><div class="periods"><button class="active" data-sales-period="week">7 jours</button><button data-sales-period="month">30 jours</button><button data-sales-period="year">12 mois</button></div></div><div class="grid stats" style="margin-bottom:12px"><div class="card"><div class="stat-head">Chiffre d'affaires</div><div class="stat-value" id="salesRevenue">—</div></div><div class="card"><div class="stat-head">Commandes prises en compte</div><div class="stat-value" id="salesCount">—</div></div><div class="card"><div class="stat-head">Panier moyen</div><div class="stat-value" id="salesAverage">—</div></div><div class="card"><div class="stat-head">Annulées</div><div class="stat-value" id="salesCancelled">—</div></div></div><div class="chart" id="salesChart"></div></div>
    <div class="card" style="margin-top:14px"><div class="card-head"><h2>Résumé des ventes par période</h2></div><div class="table-wrap"><table class="summary-table"><thead><tr><th>Période</th><th>Commandes</th><th>Chiffre d'affaires</th></tr></thead><tbody id="salesTable"></tbody></table></div></div>
