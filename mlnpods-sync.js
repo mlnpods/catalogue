@@ -1,7 +1,7 @@
 // MlnPods - synchronisation Supabase
 (function(){
  const URL='https://hnrnxyyijcxqczfpnsxu.supabase.co'; const KEY='sb_publishable_Q3toh3p4CUsL29ibGlBKbA_1xraZn4h';
- const headers={'apikey':KEY,'Authorization':'Bearer '+KEY,'Content-Type':'application/json','Prefer':'return=representation'};
+ const headers={'apikey':KEY,'Content-Type':'application/json','Prefer':'return=representation'};
  async function request(path,opts={}){const r=await fetch(URL+'/rest/v1/'+path,{...opts,headers:{...headers,...(opts.headers||{})}}); if(!r.ok) throw new Error(await r.text()); return r.status===204?[]:r.json();}
  const ids={'AirPods Max':'airpods-max','AirPods':'airpods','Watch':'watch','Chargeur rapide':'chargeur-rapide'};
  const byName=n=>ids[(n||'').trim()]||null;
