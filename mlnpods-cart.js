@@ -43,7 +43,10 @@
    localStorage.setItem(CART_KEY,JSON.stringify(cart));render();
   }catch(e){console.error('MlnPods stocks:',e);stockReady=false;}
  }
- function productImage(card){const img=card?.querySelector('img.product-photo')||card?.querySelector('.gallery img')||card?.querySelector('img');return img?.getAttribute('src')||'';}
+ function productImage(card){
+  const img=card?.querySelector('.gallery img')||card?.querySelector('img.product-photo')||card?.querySelector('img');
+  return img?.currentSrc||img?.getAttribute('src')||'';
+}
  function getCurrentProduct(){const body=document.body;const id=body.dataset.productId||'';const variant=body.dataset.variantId||$('mlnVariantSelect')?.value||null;const name=body.dataset.product||'';const price=Number(body.dataset.price||0);return {product_id:id,variant_id:variant,name:variant?(variant==='airpods-max-noir'?'AirPods Max - Noir':( $('mlnVariantSelect')?.selectedOptions[0]?.textContent||name)):name,price,image:productImage(document.querySelector('main'))};}
  function addItem(item,qty){
   if(!stockReady){alert('Les stocks ne sont pas disponibles pour le moment. Actualise la page et réessaie.');return false;}
@@ -56,11 +59,34 @@
   const countEl=$('cartCount');if(countEl)countEl.textContent=count();
   const box=$('cartItems');if(box){const rows=entries();box.innerHTML=rows.length?rows.map(([sku,it])=>{
    const max=available(it),q=Number(it.quantity);
-   return `<div class="cart-line mln-cart-line"><img src="${esc(it.image||'')}" alt="" style="width:58px;height:58px;object-fit:cover;border-radius:9px;background:#171717" onerror="this.style.display='none'"><div><strong>${esc(it.name)}</strong><small>${money(it.price)} / unité · ${esc(stockLabel(it))}</small><div class="qty-controls mln-qty-controls"><button type="button" data-cart-minus="${esc(sku)}" aria-label="Diminuer">−</button><span>${q}</span><button type="button" data-cart-plus="${esc(sku)}" aria-label="Augmenter" ${q>=max?'disabled':''}>+</button><button type="button" data-cart-remove="${esc(sku)}">Supprimer</button></div></div><strong>${money(Number(it.price||0)*q)}</strong></div>`;
+   return `<div class="cart-line mln-cart-line"><img src="${esc(it.image||'')}" alt="${esc(it.name)}" style="width:64px;height:64px;object-fit:cover;border-radius:10px;background:#171717" onerror="this.style.display='none'"><div><strong>${esc(it.name)}</strong><small>${money(it.price)} / unité · ${esc(stockLabel(it))}</small><div class="qty-controls mln-qty-controls"><button type="button" data-cart-minus="${esc(sku)}" aria-label="Diminuer">−</button><span>${q}</span><button type="button" data-cart-plus="${esc(sku)}" aria-label="Augmenter" ${q>=max?'disabled':''}>+</button><button type="button" data-cart-remove="${esc(sku)}">Supprimer</button></div></div><strong>${money(Number(it.price||0)*q)}</strong></div>`;
   }).join(''):'<p class="notice mln-empty">Ton panier est vide pour le moment.</p>';}
   const sub=$('cartSubtotal');if(sub)sub.textContent=money(subtotal());
   const start=$('checkoutStart');if(start)start.disabled=!entries().length;
   const productStart=$('mlnCheckout');if(productStart)productStart.disabled=!entries().length;
+  const status=$('mlnVariantStock');
+  if(status){
+   const id=document.body.dataset.variantId||$('mlnVariantSelect')?.value;
+   if(id){
+    const v=variants[id], n=v?Number(v.stock_quantity||0):0;
+    status.textContent=v?(n>0?`✓ ${n} disponible(s)`:'✕ Rupture de stock'):'Stock indisponible — actualise la page';
+    status.style.color=v&&n>0?'#72d69a':'#ff8b8b';
+   } else {
+    const p=products[document.body.dataset.productId], n=p?Number(p.stock_quantity||0):0;
+    status.textContent=p?(n>0?`✓ ${n} disponible(s)`:'✕ Rupture de stock'):'Stock indisponible — actualise la page';
+    status.style.color=p&&n>0?'#72d69a':'#ff8b8b';
+   }
+  }
+  const add=$('mlnAddToCart');
+  if(add && document.body.dataset.productId){
+   const id=document.body.dataset.variantId||$('mlnVariantSelect')?.value;
+   const v=id?variants[id]:null;
+   const p=products[document.body.dataset.productId];
+   const stock=id?Number(v?.stock_quantity||0):Number(p?.stock_quantity||0);
+   add.disabled=!stockReady||stock<=0;
+   if(add.disabled)add.textContent=stockReady?'Rupture de stock':'Chargement du stock…';
+   else add.textContent=`🛒 Ajouter au panier — ${money(p?.price||document.body.dataset.price||0)}`;
+  }
  }
  function deliveryFee(mode,sub){if(mode==='besancon')return sub>=30?0:5;if(mode==='saint-claude')return 0;if(mode==='relay')return 5;if(mode==='home')return 10;return 0;}
  function deliveryLabel(mode){return ({besancon:'Livraison à Besançon','saint-claude':'Retrait secteur Saint-Claude',relay:'Mondial Relay',home:'Livraison à domicile'})[mode]||'À choisir';}
@@ -99,8 +125,18 @@
   ['menuOverlay','cartOverlay'].forEach(id=>$(id)?.addEventListener('click',e=>{if(e.target.id===id)e.currentTarget.classList.remove('open');}));
   $('cartItems')?.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const sku=b.dataset.cartPlus||b.dataset.cartMinus||b.dataset.cartRemove;if(!sku)return;const it=cart[sku];if(!it)return;if(b.dataset.cartPlus){if(it.quantity<available(it))it.quantity++;else alert('Stock maximum atteint.');}if(b.dataset.cartMinus)it.quantity=Math.max(0,it.quantity-1);if(b.dataset.cartRemove||it.quantity===0)delete cart[sku];save();});
   document.querySelectorAll('.add-cart').forEach(btn=>btn.addEventListener('click',()=>{const card=btn.closest('article.product');const name=btn.dataset.product||card?.querySelector('h3')?.textContent.trim();const productId=btn.dataset.productId||({'AirPods Max':'airpods-max','AirPods':'airpods','Watch':'watch','Chargeur rapide':'chargeur-rapide'}[name]);const variantId=btn.dataset.variantId||(name==='AirPods'?card?.querySelector('.home-variant')?.value:null);const variantName=variantId?({'airpods-5':'AirPods 5','airpods-4':'AirPods 4','airpods-pro-3':'AirPods Pro 3','airpods-pro-2':'AirPods Pro 2','airpods-max-noir':'Noir'}[variantId]):null;const price=Number((card?.querySelector('.current-price')?.textContent||'').replace(',','.').replace(/[^\d.]/g,''))||Number(products[productId]?.price||0);const item={product_id:productId,variant_id:variantId||null,name:variantName?(name==='AirPods Max'?'AirPods Max - Noir':variantName):name,price,image:productImage(card)};if(addItem(item,1))$('cartOverlay')?.classList.add('open');}));
+  $('mlnVariantSelect')?.addEventListener('change',render);
   const qty=$('mlnProductQty');if(qty){$('mlnQtyMinus')?.addEventListener('click',()=>qty.value=Math.max(1,(Number(qty.value)||1)-1));$('mlnQtyPlus')?.addEventListener('click',()=>qty.value=Math.min(99,(Number(qty.value)||1)+1));qty.addEventListener('change',()=>qty.value=Math.max(1,Math.min(99,Math.floor(Number(qty.value)||1))));$('mlnAddToCart')?.addEventListener('click',()=>{const item=getCurrentProduct(),q=Math.max(1,Math.floor(Number(qty.value)||1));if(addItem(item,q))$('cartOverlay')?.classList.add('open');});}
-  $('checkoutStart')?.addEventListener('click',()=>{$('checkoutForm').hidden=false;$('checkoutForm').scrollIntoView({behavior:'smooth',block:'start'});});
+  function openCheckout(){
+   $('checkoutForm').hidden=false;
+   $('cartOverlay')?.classList.add('open');
+   $('checkoutForm').scrollIntoView({behavior:'smooth',block:'start'});
+  }
+  $('checkoutStart')?.addEventListener('click',openCheckout);
+  $('productCheckoutStart')?.addEventListener('click',()=>{
+   if(!entries().length){alert('Ajoute d’abord un produit au panier.');return;}
+   openCheckout();
+  });
   $('deliveryMode')?.addEventListener('change',()=>{const m=$('deliveryMode').value;setRequiredGroup('addressGroup',['besancon','home'].includes(m));setRequiredGroup('relayGroup',m==='relay');setRequiredGroup('phoneGroup',!!m);setRequiredGroup('emailGroup',false);$('orderSummary').value='';});
   $('sendWhatsApp')?.addEventListener('click',()=>send('wa'));$('sendSnap')?.addEventListener('click',()=>send('snap'));
   $('copyOrder')?.addEventListener('click',async()=>{const text=$('orderSummary').value||summary(savedOrder);try{await navigator.clipboard.writeText(text);alert('Récapitulatif copié !');}catch(e){$('orderSummary').focus();$('orderSummary').select();alert('Sélectionne le texte puis copie-le.');}});

@@ -103,6 +103,28 @@ header.mln-header{position:sticky;top:0;z-index:100;background:#050505ee;backdro
 
 
 .checkout-form{margin-top:18px}.checkout-form[hidden]{display:none}.checkout-form label{display:block;margin:12px 0 6px;font-weight:800;color:#f8f8f8}.checkout-form input,.checkout-form textarea,.checkout-form select{width:100%;padding:12px;border:1px solid #51451d;border-radius:9px;background:#111;color:#fff;font:inherit}.checkout-form .notice{color:#bbb;font-size:13px;line-height:1.5}.checkout-btn{display:block;width:100%;margin:12px 0;padding:14px;border:0;border-radius:11px;background:#ffd21c;color:#111;font-weight:900;cursor:pointer}.checkout-btn:disabled{opacity:.5}.send-options{display:grid;grid-template-columns:1fr 1fr;gap:10px}.send-options button{padding:12px;border:0;border-radius:10px;font-weight:900;cursor:pointer}.send-wa{background:#20c765;color:#062b16}.send-snap{background:#ffdf00;color:#111}.home-variant-label select{font:inherit}
+
+.product-checkout-cta{margin:14px 0 24px}.product-checkout-cta .checkout-btn{font-size:17px;padding:17px;background:linear-gradient(135deg,#ffdc45,#e9b800);box-shadow:0 8px 24px rgba(255,210,28,.16)}
+.product-checkout-cta .note{margin-top:8px;color:#aaa;font-size:13px;line-height:1.5}
+#mlnVariantStock{margin:8px 0 12px;color:#c9b45b;font-size:14px}
+.mln-cart-line{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #292929}
+.mln-cart-line>img{width:64px;height:64px;object-fit:cover;border-radius:10px;background:#171717}
+.mln-cart-line small{display:block;color:#aaa;margin:4px 0}
+.mln-cart-line>strong{white-space:nowrap}
+.mln-qty-controls{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-top:7px}
+.mln-qty-controls button{padding:7px 10px;border:1px solid #555;border-radius:8px;background:#242424;color:#fff}
+.mln-qty-controls button:disabled{opacity:.35}
+
+/* Panier partagé : miniatures lisibles sur mobile */
+.mln-cart-line{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #292929}
+.mln-cart-line>img{width:64px;height:64px;object-fit:cover;border-radius:10px;background:#171717}
+.mln-cart-line small{display:block;color:#aaa;margin:4px 0}
+.mln-cart-line>strong{white-space:nowrap}
+.mln-qty-controls{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-top:7px}
+.mln-qty-controls button{padding:7px 10px;border:1px solid #555;border-radius:8px;background:#242424;color:#fff}
+.mln-qty-controls button:disabled{opacity:.35}
+.product-checkout-cta{margin:14px 0 24px}
+.product-checkout-cta .checkout-btn{font-size:17px;padding:17px;background:linear-gradient(135deg,#ffdc45,#e9b800);box-shadow:0 8px 24px rgba(255,210,28,.16)}
 </style></head><body data-product="Watch" data-product-id="watch" data-price="35">
 <header class="mln-header"><div class="wrap mln-header-inner">
   <button class="mln-head-btn" id="menuOpen" type="button" aria-label="Ouvrir le menu">☰</button>
@@ -170,6 +192,7 @@ header.mln-header{position:sticky;top:0;z-index:100;background:#050505ee;backdro
 <p class="desc">⌚ Adopte un look connecté avec la Watch MlnPods. Son écran couleur affiche une interface avec différentes icônes et fonctions accessibles depuis le poignet. 🔔 Pratique au quotidien pour consulter les fonctions disponibles sur la montre. 📦 Les photos montrent la montre, son bracelet, son emballage et les accessoires fournis.</p><ul class="features"><li>⌚ Écran couleur avec interface à icônes</li><li>🖤 Bracelet noir au style sobre</li><li>🔌 Câble et éléments de présentation visibles sur les photos</li><li>📱 Vérifie la compatibilité et les fonctions disponibles avec ton téléphone avant commande</li></ul>
 
 <div class="mln-buy-box" aria-label="Ajouter Watch au panier">
+  <p id="mlnVariantStock" class="notice" aria-live="polite">Vérification du stock…</p>
   <label for="mlnProductQty">Choisir la quantité</label>
   <div class="mln-quantity">
     <button type="button" id="mlnQtyMinus" aria-label="Diminuer la quantité">−</button>
@@ -178,14 +201,7 @@ header.mln-header{position:sticky;top:0;z-index:100;background:#050505ee;backdro
   </div>
   <button type="button" class="mln-add-cart" id="mlnAddToCart">🛒 Ajouter au panier — 35 €</button>
 </div>
-<div class="order-actions">
-<a class="order-btn whatsapp-btn" href="https://wa.me/33780842264?text=Bonjour MlnPods, je souhaite commander la Watch à 35€." target="_blank" rel="noopener">
-<span class="btn-icon">💬</span><span><strong>Commander sur WhatsApp</strong><small>Réponse rapide</small></span><span class="btn-arrow">↗</span>
-</a>
-<a class="order-btn snapchat-btn" href="https://www.snapchat.com/add/shopmaillot25" target="_blank" rel="noopener">
-<span class="btn-icon">👻</span><span><strong>Commander sur Snapchat</strong><small>@shopmaillot25</small></span><span class="btn-arrow">↗</span>
-</a>
-</div>
+<div class="product-checkout-cta"><button type="button" class="checkout-btn" id="productCheckoutStart">🛒 Valider ma commande</button><p class="note">Ajoute le produit au panier, puis valide ta commande avec le même formulaire que sur la page principale.</p></div>
 <p class="note">MlnPods est une boutique indépendante. Produit non présenté comme un produit officiel Apple. Les fonctions et la compatibilité sont à confirmer avant commande.</p>
 </section></div>
 <section class="wrap customer-photo-reviews" aria-label="Photos des avis clients">

@@ -83,6 +83,28 @@ header.mln-header{position:sticky;top:0;z-index:100;background:#050505ee;backdro
 
 
 .checkout-form{margin-top:18px}.checkout-form[hidden]{display:none}.checkout-form label{display:block;margin:12px 0 6px;font-weight:800;color:#f8f8f8}.checkout-form input,.checkout-form textarea,.checkout-form select{width:100%;padding:12px;border:1px solid #51451d;border-radius:9px;background:#111;color:#fff;font:inherit}.checkout-form .notice{color:#bbb;font-size:13px;line-height:1.5}.checkout-btn{display:block;width:100%;margin:12px 0;padding:14px;border:0;border-radius:11px;background:#ffd21c;color:#111;font-weight:900;cursor:pointer}.checkout-btn:disabled{opacity:.5}.send-options{display:grid;grid-template-columns:1fr 1fr;gap:10px}.send-options button{padding:12px;border:0;border-radius:10px;font-weight:900;cursor:pointer}.send-wa{background:#20c765;color:#062b16}.send-snap{background:#ffdf00;color:#111}.home-variant-label select{font:inherit}
+
+.product-checkout-cta{margin:14px 0 24px}.product-checkout-cta .checkout-btn{font-size:17px;padding:17px;background:linear-gradient(135deg,#ffdc45,#e9b800);box-shadow:0 8px 24px rgba(255,210,28,.16)}
+.product-checkout-cta .note{margin-top:8px;color:#aaa;font-size:13px;line-height:1.5}
+#mlnVariantStock{margin:8px 0 12px;color:#c9b45b;font-size:14px}
+.mln-cart-line{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #292929}
+.mln-cart-line>img{width:64px;height:64px;object-fit:cover;border-radius:10px;background:#171717}
+.mln-cart-line small{display:block;color:#aaa;margin:4px 0}
+.mln-cart-line>strong{white-space:nowrap}
+.mln-qty-controls{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-top:7px}
+.mln-qty-controls button{padding:7px 10px;border:1px solid #555;border-radius:8px;background:#242424;color:#fff}
+.mln-qty-controls button:disabled{opacity:.35}
+
+/* Panier partagé : miniatures lisibles sur mobile */
+.mln-cart-line{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #292929}
+.mln-cart-line>img{width:64px;height:64px;object-fit:cover;border-radius:10px;background:#171717}
+.mln-cart-line small{display:block;color:#aaa;margin:4px 0}
+.mln-cart-line>strong{white-space:nowrap}
+.mln-qty-controls{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-top:7px}
+.mln-qty-controls button{padding:7px 10px;border:1px solid #555;border-radius:8px;background:#242424;color:#fff}
+.mln-qty-controls button:disabled{opacity:.35}
+.product-checkout-cta{margin:14px 0 24px}
+.product-checkout-cta .checkout-btn{font-size:17px;padding:17px;background:linear-gradient(135deg,#ffdc45,#e9b800);box-shadow:0 8px 24px rgba(255,210,28,.16)}
 </style></head><body data-product="AirPods Max" data-product-id="airpods-max" data-variant-id="airpods-max-noir" data-price="50">
 <header class="mln-header"><div class="wrap mln-header-inner">
   <button class="mln-head-btn" id="menuOpen" type="button" aria-label="Ouvrir le menu">☰</button>
@@ -144,6 +166,7 @@ header.mln-header{position:sticky;top:0;z-index:100;background:#050505ee;backdro
 
 <main class="wrap"><a class="back" href="index.html">← Retour au catalogue</a><div class="layout"><section class="media" aria-label="Photos et vidéo du casque"><div><p class="video-label">🎬 DÉCOUVRE LE MLNPODS MAX</p><div class="video-box"><video autoplay muted loop playsinline webkit-playsinline controls preload="metadata"><source src="assets/airpods-max-video.mp4" type="video/mp4">Ton navigateur ne peut pas lire cette vidéo.</video></div></div><div><h2 class="section-title">📸 Photos réelles du stock</h2><div class="gallery"><img src="assets/airpods-max-stock-1.jpeg" alt="Casques MlnPods Max dans leur emballage"><img src="assets/airpods-max-stock-2.jpeg" alt="Contenu et accessoires du casque MlnPods Max"></div></div></section><section class="details"><span class="tag">🔥 OFFRE PROMOTIONNELLE</span><h1>AirPods Max</h1><div class="price-row"><span class="old">80 €</span><span class="current">50 €</span><span class="discount">-38 %</span></div><p class="desc">🎧 Profite d’un casque au design élégant et enveloppant, idéal pour écouter tes playlists, regarder tes vidéos ou profiter de tes podcasts. Son arceau confortable et ses coussinets couvrants offrent une expérience d’écoute agréable au quotidien.</p><ul class="features"><li>🎵 Pour la musique, les vidéos et les appels</li><li>🖤 Finition noire au style moderne</li><li>📦 Présentation en boîte avec accessoires visibles sur les photos</li><li>💬 Contacte-nous pour connaître les disponibilités et les détails du modèle</li></ul>
 <div class="mln-buy-box" aria-label="Ajouter AirPods Max au panier">
+  <p class="notice" id="mlnVariantStock" aria-live="polite">Variante : Noir · Vérification du stock…</p>
   <label for="mlnProductQty">Choisir la quantité</label>
   <div class="mln-quantity">
     <button type="button" id="mlnQtyMinus" aria-label="Diminuer la quantité">−</button>
@@ -152,14 +175,8 @@ header.mln-header{position:sticky;top:0;z-index:100;background:#050505ee;backdro
   </div>
   <button type="button" class="mln-add-cart" id="mlnAddToCart">🛒 Ajouter au panier — 50 €</button>
 </div>
-<div class="order-actions">
-<a class="order-btn whatsapp-btn" href="https://wa.me/33780842264?text=Bonjour%20MlnPods%2C%20je%20souhaite%20commander%20le%20casque%20AirPods%20Max%20%C3%A0%2050%E2%82%AC." target="_blank" rel="noopener">
-<span class="btn-icon">💬</span><span><strong>Commander sur WhatsApp</strong><small>Réponse rapide</small></span><span class="btn-arrow">↗</span>
-</a>
-<a class="order-btn snapchat-btn" href="https://www.snapchat.com/add/shopmaillot25" target="_blank" rel="noopener">
-<span class="btn-icon">👻</span><span><strong>Commander sur Snapchat</strong><small>@shopmaillot25</small></span><span class="btn-arrow">↗</span>
-</a>
-</div><p class="note">MlnPods est une boutique indépendante. Produit non présenté comme un produit officiel Apple.</p></section></div>
+<div class="product-checkout-cta"><button type="button" class="checkout-btn" id="productCheckoutStart">🛒 Valider ma commande</button><p class="note">Ajoute le produit au panier, puis valide ta commande avec le même formulaire que sur la page principale.</p></div>
+<p class="note">MlnPods est une boutique indépendante. Produit non présenté comme un produit officiel Apple.</p></section></div>
 <section class="wrap customer-photo-reviews" aria-label="Photos des avis clients">
 <div class="customer-photo-heading"><h2>💬 Avis de nos clients</h2></div>
 <p class="customer-photo-intro">Quelques retours clients partagés sur notre page d’accueil ❤️</p>
