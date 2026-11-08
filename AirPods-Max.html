@@ -220,13 +220,18 @@ header.mln-header{position:sticky;top:0;z-index:100;background:#050505ee;backdro
     </div>
   </div>
   <div id="relayGroup" class="mln-address-panel" hidden>
-    <h3>📦 Ton point relais</h3>
-    <p>Choisis ton point relais sur le site Mondial Relay, puis indique ses coordonnées.</p>
-    <a href="https://www.mondialrelay.fr/trouver-le-point-relais-le-plus-proche/" target="_blank" rel="noopener" class="mln-relay-link">🔎 Trouver un point relais</a>
+    <h3>📦 Adresse du point relais</h3>
+    <p>🔎 Trouve ton point relais sur Mondial Relay, puis recopie ses coordonnées ci-dessous.</p>
+    <a href="https://www.mondialrelay.fr/trouver-le-point-relais-le-plus-proche/" target="_blank" rel="noopener" class="mln-relay-link">📍 Trouver un point relais Mondial Relay</a>
     <div class="mln-form-grid">
-      <label class="mln-full">Nom du point relais <input id="relayName" placeholder="Nom du commerce" required></label>
-      <label class="mln-full">Adresse du point relais <input id="relayAddress" placeholder="Adresse, code postal et ville" required></label>
+      <label class="mln-full">Nom du point relais <input id="relayName" placeholder="Ex. Tabac / Carrefour City…" required></label>
+      <label>Numéro <input id="relayStreetNumber" placeholder="Ex. 12" required></label>
+      <label>Rue <input id="relayStreet" placeholder="Nom de la rue" required></label>
+      <label class="mln-full">Complément d'adresse <span class="mln-optional">(optionnel)</span><input id="relayAddressComplement" placeholder="Bâtiment, galerie, précision…"></label>
+      <label>Code postal <input id="relayPostcode" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" placeholder="25000" required></label>
+      <label>Ville <input id="relayCity" placeholder="Besançon" required></label>
     </div>
+    <p class="mln-relay-help">⚠️ Vérifie que le nom et l’adresse correspondent exactement au point relais choisi.</p>
   </div>
 
   <div class="mln-checkout-heading mln-summary-heading">

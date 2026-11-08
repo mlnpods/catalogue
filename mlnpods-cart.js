@@ -33,9 +33,13 @@
  async function loadStock(){
   if(!db){stockReady=false;return;}
   try{
-   const [p,v]=await Promise.all([db.from('products').select('id,name,price,old_price,promo_enabled,stock_quantity,in_stock'),db.from('product_variants').select('variant_id,product_id,variant_name,stock_quantity')]);
-   if(p.error)throw p.error;if(v.error)throw v.error;
-   (p.data||[]).forEach(x=>products[x.id]=x);(v.data||[]).forEach(x=>variants[x.variant_id]=x);stockReady=true;
+   const p=await db.from('products').select('id,name,price,old_price,promo_enabled,stock_quantity,in_stock');
+   if(p.error)throw p.error;
+   (p.data||[]).forEach(x=>products[x.id]=x);
+   const v=await db.from('product_variants').select('variant_id,product_id,variant_name,stock_quantity');
+   if(v.error)console.warn('MlnPods variantes non chargées :',v.error.message);
+   else (v.data||[]).forEach(x=>variants[x.variant_id]=x);
+   stockReady=true;
    for(const [sku,it] of entries()){
     const prod=products[it.product_id];if(prod&&Number.isFinite(Number(prod.price)))it.price=Number(prod.price);
     if(it.variant_id&&variants[it.variant_id])it.name=it.variant_id==='airpods-max-noir'?'AirPods Max - Noir':variants[it.variant_id].variant_name;
@@ -69,11 +73,11 @@
   const productStart=$('mlnCheckout');if(productStart)productStart.disabled=!entries().length;
   document.querySelectorAll('[data-product-variant],[data-home-variant]').forEach(btn=>{
    const id=btn.dataset.productVariant||btn.dataset.homeVariant;
-   const v=variants[id];
-   // Le choix d'un modèle doit rester cliquable même si son stock est à zéro.
-   // Seul le bouton d'ajout au panier est bloqué en cas de rupture.
+   const v=variants[id],baseLabel=btn.dataset.baseLabel||(btn.dataset.baseLabel=btn.textContent.trim().replace(/ · (?:\\d+ en stock|Rupture de stock|Stock…?)$/,''));
+   const n=v?Number(v.stock_quantity||0):null;
    btn.disabled=false;
-   btn.title=v?`${Number(v.stock_quantity||0)>0?`${Number(v.stock_quantity)} en stock`:'Rupture de stock'}`:'Stock en cours de vérification';
+   btn.title=v?(n>0?`${n} en stock`:'Rupture de stock'):'Stock en cours de vérification';
+   if(btn.dataset.homeVariant)btn.textContent=v?`${baseLabel} · ${n>0?n+' en stock':'Rupture de stock'}`:`${baseLabel} · Stock…`;
   });
   const status=$('mlnVariantStock');
   if(status){
@@ -95,7 +99,15 @@
  function deliveryFee(mode,sub){if(mode==='besancon')return sub>=30?0:5;if(mode==='saint-claude')return 0;if(mode==='relay')return 5;if(mode==='home')return 10;return 0;}
  function deliveryLabel(mode){return ({besancon:'Livraison à Besançon','saint-claude':'Retrait secteur Saint-Claude',relay:'Mondial Relay',home:'Livraison à domicile'})[mode]||'À choisir';}
  function addressValue(mode){
-  if(mode==='relay')return `Point relais : ${$('relayName')?.value.trim()} — ${$('relayAddress')?.value.trim()}`;
+  if(mode==='relay'){
+   const no=$('relayStreetNumber')?.value.trim()||'';
+   const street=$('relayStreet')?.value.trim()||'';
+   const complement=$('relayAddressComplement')?.value.trim()||'';
+   const postcode=$('relayPostcode')?.value.trim()||'';
+   const city=$('relayCity')?.value.trim()||'';
+   const address=[no,street].filter(Boolean).join(' ')+(complement?', '+complement:'')+`, ${postcode} ${city}`;
+   return `Point relais : ${$('relayName')?.value.trim()} — ${address}`;
+  }
   if(mode==='saint-claude')return 'Retrait secteur Saint-Claude, Besançon';
   if(['besancon','home'].includes(mode)){
    const no=$('customerStreetNumber')?.value.trim()||'';
@@ -153,13 +165,16 @@
    const text=summary(order);$('orderSummary').value=text;
    // La commande est enregistrée et le message WhatsApp préparé : vider le panier maintenant.
    cart={};localStorage.removeItem(CART_KEY);savedOrder=null;render();
+   $('cartOverlay')?.classList.remove('open');
+   $('checkoutForm').hidden=true;
+   sessionStorage.setItem('mlnpods_return_home_after_whatsapp','1');
    window.location.href='https://wa.me/'+WHATSAPP+'?text='+encodeURIComponent(text);
   }catch(e){
    alert('Impossible de préparer la commande : '+(e.message||'Erreur inconnue')+'\nRéessaie dans un instant.');
   }finally{if(button)button.disabled=false;}
  }
  function init(){
-  if(!document.getElementById('mln-cart-layout-style')){const st=document.createElement('style');st.id='mln-cart-layout-style';st.textContent='.mln-cart-line{grid-template-columns:68px minmax(0,1fr) auto!important;align-items:center}.mln-cart-line>img{width:68px!important;height:68px!important;object-fit:cover!important;border:1px solid #b18b32;box-shadow:0 2px 10px #0005}.mln-qty-controls button:disabled{opacity:.35;cursor:not-allowed}.checkout-form[hidden]{display:none!important}';document.head.appendChild(st);}
+  if(!document.getElementById('mln-cart-layout-style')){const st=document.createElement('style');st.id='mln-cart-layout-style';st.textContent='.mln-cart-line{grid-template-columns:68px minmax(0,1fr) auto!important;align-items:center}.mln-cart-line>img{width:68px!important;height:68px!important;object-fit:cover!important;border:1px solid #b18b32;box-shadow:0 2px 10px #0005}.mln-qty-controls button:disabled{opacity:.35;cursor:not-allowed}.checkout-form[hidden]{display:none!important}.mln-relay-help{font-size:12px;color:#cbbd8b;margin-top:10px;line-height:1.5}';document.head.appendChild(st);}
   // Shared menu and cart open/close controls (home and product pages).
   $('menuOpen')?.addEventListener('click',()=>$('menuOverlay')?.classList.add('open'));
   $('cartOpen')?.addEventListener('click',()=>$('cartOverlay')?.classList.add('open'));
@@ -210,7 +225,8 @@
    const address=['besancon','home'].includes(mode),relay=mode==='relay';
    $('addressGroup').hidden=!address;$('relayGroup').hidden=!relay;
    ['customerStreetNumber','customerStreet','customerPostcode','customerCity'].forEach(id=>{const el=$(id);if(el)el.required=address;});
-   ['relayName','relayAddress'].forEach(id=>{const el=$(id);if(el)el.required=relay;});
+   ['relayName','relayStreetNumber','relayStreet','relayPostcode','relayCity'].forEach(id=>{const el=$(id);if(el)el.required=relay;});
+   const relayComplement=$('relayAddressComplement');if(relayComplement)relayComplement.required=false;
    const shipped=mode==='home'||mode==='relay';
    ['customerFirstName','customerLastName'].forEach(id=>{const el=$(id);if(el)el.required=shipped;});
    const email=$('customerEmail');if(email)email.required=shipped;
@@ -220,8 +236,11 @@
    $('orderSummary').value='';refreshCheckoutTotals();
   }));
   $('sendWhatsApp')?.addEventListener('click',send);
-  ['customerFirstName','customerLastName','customerPhone','customerEmail','customerSnapchat','customerStreetNumber','customerStreet','customerAddressComplement','customerPostcode','customerCity','relayName','relayAddress'].forEach(id=>$(id)?.addEventListener('input',()=>{$('orderSummary').value='';}));
+  ['customerFirstName','customerLastName','customerPhone','customerEmail','customerSnapchat','customerStreetNumber','customerStreet','customerAddressComplement','customerPostcode','customerCity','relayName','relayStreetNumber','relayStreet','relayAddressComplement','relayPostcode','relayCity'].forEach(id=>$(id)?.addEventListener('input',()=>{$('orderSummary').value='';}));
   refreshCheckoutTotals();
+  const returnHome=()=>{if(sessionStorage.getItem('mlnpods_return_home_after_whatsapp')==='1'&&document.visibilityState==='visible'){sessionStorage.removeItem('mlnpods_return_home_after_whatsapp');window.location.replace('index.html');}};
+  document.addEventListener('visibilitychange',returnHome);
+  window.addEventListener('pageshow',returnHome);
   window.addEventListener('storage',e=>{if(e.key===CART_KEY){cart=readCart();render();}});
   render();loadStock();
  }
