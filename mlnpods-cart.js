@@ -358,7 +358,6 @@
   $('promoCodeInput')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();applyPromo();}});
   $('promoCodeInput')?.addEventListener('input',()=>{if(promoState){promoState=null;render();}if($('promoCodeMessage'))$('promoCodeMessage').textContent='';});
   $('sendWhatsApp')?.addEventListener('click',send);
-  $('sendSnapchat')?.addEventListener('click',sendSnapchat);
   ['customerFirstName','customerLastName','customerPhone','customerEmail','customerSnapchat','customerStreetNumber','customerStreet','customerAddressComplement','customerPostcode','customerCity','relayName','relayStreetNumber','relayStreet','relayAddressComplement','relayPostcode','relayCity'].forEach(id=>$(id)?.addEventListener('input',()=>{$('orderSummary').value='';}));
   refreshCheckoutTotals();
   const returnHome=()=>{if(sessionStorage.getItem('mlnpods_return_home_after_whatsapp')==='1'&&document.visibilityState==='visible'){sessionStorage.removeItem('mlnpods_return_home_after_whatsapp');window.location.replace('index.html');}};
