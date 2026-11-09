@@ -10,7 +10,7 @@
   if(response.status===204)return [];
   return response.json();
  }
- const ids={'AirPods Max':'airpods-max','AirPods':'airpods','Watch':'watch','Chargeur rapide':'chargeur-rapide'};
+ const ids={'AirPods Max':'airpods-max','AirPods':'airpods','Watch':'watch'};
  const byName=name=>ids[(name||'').trim()]||null;
  const euro=value=>Number(value||0).toLocaleString('fr-FR',{maximumFractionDigits:2})+' €';
  function countdown(date){if(!date)return '';const ms=new Date(date).getTime()-Date.now();if(!Number.isFinite(ms)||ms<=0)return '';let s=Math.floor(ms/1000),d=Math.floor(s/86400);s%=86400;let h=Math.floor(s/3600);s%=3600;let m=Math.floor(s/60);s%=60;return (d?d+'j ':'')+String(h).padStart(2,'0')+'h '+String(m).padStart(2,'0')+'m '+String(s).padStart(2,'0')+'s';}
@@ -30,7 +30,7 @@
  function render(rows){addStyles();const map=Object.fromEntries(rows.map(p=>[p.id,p]));
   document.querySelectorAll('article.product').forEach(card=>{const name=card.querySelector('h3')?.textContent.trim();const id=byName(name);const p=map[id];if(p)setCard(card,p);});
   const heading=document.querySelector('main h1');if(heading){const p=map[byName(heading.textContent.trim())];if(p){const row=document.querySelector('.price-row'),current=row?.querySelector('.current'),old=row?.querySelector('.old');if(current)current.textContent=euro(p.price);if(old){old.textContent=p.promo_enabled?euro(p.old_price):'';old.style.display=p.promo_enabled?'':'none';}
-   const img=document.querySelector('main img.product-photo, main .product-image');if(img){let wrap=img.parentElement;if(!wrap.classList.contains('mln-photo-wrap')){wrap.classList.add('mln-photo-wrap');}let overlay=wrap.querySelector('.mln-stock-overlay');if(!p.in_stock){if(!overlay){overlay=document.createElement('div');overlay.className='mln-stock-overlay';wrap.appendChild(overlay);}const timer=countdown(p.restock_at);overlay.innerHTML='<div>RESTOCK BIENTÔT</div>'+(timer?'<div class="mln-count" data-restock="'+p.id+'">'+timer+'</div>':'<small>PRODUIT INDISPONIBLE</small>');img.style.filter='blur(5px) brightness(.48)';}else{img.style.filter='';if(overlay)overlay.remove();}}
+   const img=document.querySelector('main img.product-photo, main .product-image, main .gallery img');if(img){let wrap=img.parentElement;if(!wrap.classList.contains('mln-photo-wrap')){wrap.classList.add('mln-photo-wrap');}let overlay=wrap.querySelector('.mln-stock-overlay');if(!p.in_stock){if(!overlay){overlay=document.createElement('div');overlay.className='mln-stock-overlay';wrap.appendChild(overlay);}const timer=countdown(p.restock_at);overlay.innerHTML='<div>RESTOCK BIENTÔT</div>'+(timer?'<div class="mln-count" data-restock="'+p.id+'">'+timer+'</div>':'<small>PRODUIT INDISPONIBLE</small>');img.style.filter='blur(5px) brightness(.48)';}else{img.style.filter='';if(overlay)overlay.remove();}}
   }}
  }
  async function refresh(){try{const rows=await request('products?select=*');window.MlnPodsProducts=rows;render(rows);}catch(error){console.error('MlnPods sync:',error);}}

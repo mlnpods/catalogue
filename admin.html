@@ -90,7 +90,8 @@ main{width:100%;max-width:1600px;margin:0 auto;padding:29px clamp(15px,3vw,42px)
 @media(max-width:1100px){.product-row{grid-template-columns:72px minmax(120px,1fr) minmax(180px,1fr)}.product-actions{grid-column:2/-1}.checks-inline{grid-column:2/-1}}
 @media(max-width:700px){.product-row{grid-template-columns:62px minmax(0,1fr);gap:11px;padding:13px}.product-thumb{width:62px;height:62px}.product-name{align-self:center}.product-edit,.product-actions,.checks-inline,.stock-tools{grid-column:1/-1}.product-edit{display:grid;grid-template-columns:1fr 1fr}.product-actions{justify-content:space-between}.product-actions>div{width:110px}.checks-inline{padding-top:3px}.variant-grid{grid-template-columns:1fr 1fr}.restock-panel{align-items:flex-start}.restock-controls{width:100%}.restock-controls input{flex:1;min-width:0}.site-link{justify-content:center}.site-link span{display:inline}}
 
-.promo-admin-form{display:grid;gap:14px;padding:16px 0;border-bottom:1px solid #333}.promo-admin-form label{display:grid;gap:7px;font-size:13px}.promo-admin-form input,.promo-admin-form select{padding:12px;border:1px solid #444;border-radius:10px;background:#111;color:#fff}.promo-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid #333;flex-wrap:wrap}.promo-row small{display:block;color:#aaa;margin-top:4px}.promo-row-actions{display:flex;gap:8px}</style>
+.promo-admin-form{display:grid;gap:14px;padding:16px 0;border-bottom:1px solid #333}.promo-admin-form label{display:grid;gap:7px;font-size:13px}.promo-admin-form input,.promo-admin-form select{padding:12px;border:1px solid #444;border-radius:10px;background:#111;color:#fff}.promo-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid #333;flex-wrap:wrap}.promo-row small{display:block;color:#aaa;margin-top:4px}.promo-row-actions{display:flex;gap:8px}.variant-photo{display:block;width:100%;height:112px;object-fit:contain;background:#0c0c0c;border:1px solid #3c3218;border-radius:10px;margin-bottom:9px;padding:5px}.variant-item{min-width:0}
+</style>
 </head>
 <body>
 <section class="login-screen" id="login">
@@ -196,7 +197,7 @@ async function loadProducts(){
   db.from('product_variants').select('*').order('variant_name')
  ]);
  if(error){setMessage('productsMessage','Erreur : '+error.message);$('productsList').innerHTML='<div class="empty">Impossible de charger les produits.</div>';return;}
- products=data||[];
+ products=(data||[]).filter(p=>String(p.id)!=='chargeur-rapide'&&!/chargeur\s+rapide/i.test(String(p.name||'')));
  variantsReady=!verror;
  variants=verror?[]:(vdata||[]);
  renderProducts();
@@ -244,16 +245,20 @@ function productImageKey(p){
  const n=String(p.name||'').toLowerCase();
  if(n.includes('max'))return 'airpods-max';
  if(n.includes('watch')||n.includes('montre'))return 'watch';
- if(n.includes('chargeur'))return 'chargeur-rapide';
- if(n.includes('airpod'))return 'airpods';
+  if(n.includes('airpod'))return 'airpods';
  return null;
 }
 function variantDefaults(p){
  const n=String(p.name||'').toLowerCase();
- if(n==='airpods'||n.includes('airpods '))return ['AirPods 5','AirPods 4','AirPods Pro 3','AirPods Pro 2'];
  if(n.includes('max'))return ['Noir'];
+ if(n==='airpods'||n.startsWith('airpods '))return ['AirPods 5','AirPods 4','AirPods Pro 3','AirPods Pro 2'];
  return [];
 }
+const VARIANT_PHOTOS={
+ 'AirPods 5':'assets/airpods5-01.jpeg',
+ 'AirPods Pro 3':'assets/airpodspro3-01.jpeg',
+ 'Noir':'assets/airpods-max-new-1.jpeg'
+};
 function renderProducts(){
  $('productsList').innerHTML=products.length?products.map(p=>{
  const qty=Number(p.stock_quantity||0),stockClass=qty<=0?'red':qty<=5?'orange':'green';
@@ -262,7 +267,7 @@ function renderProducts(){
  const defaults=variantDefaults(p);
  const isVariantProduct=defaults.length>0;
  const variantRows=isVariantProduct?(vars.length?vars:defaults.map(name=>({variant_id:'',product_id:p.id,variant_name:name,stock_quantity:0,_missing:true}))):[];
- const variantMarkup=isVariantProduct?`<div class="stock-tools"><div class="stock-tools-head"><div><strong>🎛️ Stock par variante</strong><br><small>Chaque modèle possède sa propre quantité.</small></div><span class="pill ${variantsReady?'green':'orange'}">${variantsReady?'Synchronisé':'Configuration requise'}</span></div><div class="variant-grid">${variantRows.map(v=>`<div class="variant-item" data-variant-id="${esc(v.variant_id||'')}" data-variant-name="${esc(v.variant_name)}"><label>${esc(v.variant_name)}</label><div class="variant-line"><input class="variant-qty" type="number" min="0" step="1" value="${Number(v.stock_quantity||0)}" ${variantsReady?'':'disabled'}><span>unité(s)</span></div></div>`).join('')}</div><div style="display:flex;justify-content:flex-end;gap:10px;align-items:center;flex-wrap:wrap"><span class="save-status muted variant-status"></span><button class="btn btn-dark save-variants" ${variantsReady?'':'disabled'}>💾 Enregistrer les variantes</button></div></div>`:'';
+ const variantMarkup=isVariantProduct?`<div class="stock-tools"><div class="stock-tools-head"><div><strong>🎛️ Stock par variante</strong><br><small>Chaque modèle possède sa propre quantité.</small></div><span class="pill ${variantsReady?'green':'orange'}">${variantsReady?'Synchronisé':'Configuration requise'}</span></div><div class="variant-grid">${variantRows.map(v=>`<div class="variant-item" data-variant-id="${esc(v.variant_id||'')}" data-variant-name="${esc(v.variant_name)}">${VARIANT_PHOTOS[v.variant_name]?`<img class="variant-photo" src="${VARIANT_PHOTOS[v.variant_name]}" alt="${esc(v.variant_name)}">`:''}<label>${esc(v.variant_name)}</label><div class="variant-line"><input class="variant-qty" type="number" min="0" step="1" value="${Number(v.stock_quantity||0)}" ${variantsReady?'':'disabled'}><span>unité(s)</span></div></div>`).join('')}</div><div style="display:flex;justify-content:flex-end;gap:10px;align-items:center;flex-wrap:wrap"><span class="save-status muted variant-status"></span><button class="btn btn-dark save-variants" ${variantsReady?'':'disabled'}>💾 Enregistrer les variantes</button></div></div>`:'';
  const restockVal=p.restock_at?new Date(p.restock_at).toISOString().slice(0,16):'';
  return `<article class="product-row" data-id="${esc(p.id)}" data-name="${esc((p.name||'').toLowerCase())}">
  <div class="product-thumb">${photo?`<img src="${photo}" alt="${esc(p.name)}">`:'<span>📦</span>'}</div>
@@ -329,7 +334,7 @@ function orderLines(o){
 }
 function orderCard(o,compact=false){
  const total=o.total===null||o.total===undefined?'Sur devis':euro(o.total);
- const detail=[orderLines(o),`Sous-total : ${euro(o.subtotal)}`,`Livraison : ${o.delivery_fee==null?'Sur devis':euro(o.delivery_fee)}`,`Téléphone : ${o.phone||'Non renseigné'}`,`Adresse : ${o.address||'Non renseignée'}`,`E-mail : ${o.email||'Non renseigné'}`,`Paiement : ${o.payment_method||'Non précisé'}`].filter(Boolean).join('\n');
+ const detail=[orderLines(o),`Sous-total : ${euro(o.subtotal)}`,`Livraison : ${o.delivery_fee==null?'Sur devis':euro(o.delivery_fee)}`,`Téléphone : ${o.phone||'Non renseigné'}`,`Adresse : ${o.address||'Non renseignée'}`,`E-mail : ${o.email||'Non renseigné'}`,`Code promo : ${o.promo_code||'Aucun'}`,`Réduction : ${euro(o.discount_amount||0)}`,`Paiement : ${o.payment_method||'Non précisé'}`].filter(Boolean).join('\n');
  const status=o.status||'En attente';
  return `<article class="order-card" data-order-id="${esc(o.id)}"><div class="order-head"><div><h3>Commande n°${esc(o.order_number??'—')}</h3><div class="order-meta">${esc(dateFmt(o.created_at))} · ${esc(o.delivery_mode||'Livraison non précisée')}</div></div><span class="pill ${isCancelled(o)?'red':status==='Terminée'?'green':status==='En attente'?'orange':''}">${esc(status)}</span></div>
  <div class="order-details">${esc(detail)}</div><div class="order-bottom"><div class="order-total">${esc(total)}</div>${compact?'':`<div class="order-controls"><select class="order-status" aria-label="Statut de commande">${['En attente','Confirmée','En préparation','Expédiée','Terminée','Annulée'].map(x=>`<option ${status===x?'selected':''}>${x}</option>`).join('')}</select><button type="button" class="btn btn-gold update-order">Enregistrer</button><span class="save-status muted"></span></div>`}</div></article>`;
@@ -383,8 +388,8 @@ function renderSales(){
 }
 function csvCell(v){return '"'+String(v??'').replace(/"/g,'""')+'"';}
 function exportCsv(){
- const header=['Numero','Date','Statut','Produits','Sous-total','Livraison','Total','Mode de livraison','Telephone','Email','Adresse','Paiement'];
- const rows=orders.map(o=>[o.order_number,dateFmt(o.created_at),o.status,orderLines(o).replace(/\n/g,' | '),o.subtotal,o.delivery_fee,o.total,o.delivery_mode,o.phone,o.email,o.address,o.payment_method]);
+ const header=['Numero','Date','Statut','Produits','Sous-total','Code promo','Réduction','Livraison','Total','Mode de livraison','Telephone','Email','Adresse','Paiement'];
+ const rows=orders.map(o=>[o.order_number,dateFmt(o.created_at),o.status,orderLines(o).replace(/\n/g,' | '),o.subtotal,o.promo_code,o.discount_amount,o.delivery_fee,o.total,o.delivery_mode,o.phone,o.email,o.address,o.payment_method]);
  const csv='\ufeff'+[header,...rows].map(r=>r.map(csvCell).join(';')).join('\r\n');
  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='mlnpods-commandes-'+new Date().toISOString().slice(0,10)+'.csv';a.click();URL.revokeObjectURL(url);
 }

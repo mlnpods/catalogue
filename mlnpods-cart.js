@@ -13,47 +13,30 @@
  const products={}; const variants={}; let stockReady=false; let savedOrder=null;
  function migrateCart(raw){
   const out={}; if(!raw||typeof raw!=='object')return out;
-  const oldMap={'AirPods Max':['airpods-max','airpods-max-noir','AirPods Max - Noir',50,'assets/airpods-max-1.jpeg'],'AirPods':['airpods','airpods-5','AirPods 5',30,'assets/airpods-1.webp'],'Watch':['watch',null,'Watch',35,'assets/watch-1.jpeg'],'Chargeur rapide':['chargeur-rapide',null,'Chargeur rapide',15,'assets/chargeur-rapide.jpeg']};
+  const oldMap={'AirPods Max':['airpods-max','airpods-max-noir','AirPods Max - Noir',50,'assets/airpods-max-1.jpeg'],'AirPods':['airpods','airpods-5','AirPods 5',30,'assets/airpods-1.webp'],'Watch':['watch',null,'Watch',35,'assets/watch-1.jpeg'],};
   for(const [key,val] of Object.entries(raw)){
    if(typeof val==='number'){
     const m=oldMap[key]; if(!m||val<=0)continue;
     const sku=m[1]||m[0]; out[sku]={product_id:m[0],variant_id:m[1],name:m[2],quantity:Math.floor(val),price:m[3],image:m[4]};
-   } else if(val&&typeof val==='object'&&Number(val.quantity)>0){out[key]={...val,quantity:Math.floor(Number(val.quantity))};}
+   } else if(val&&typeof val==='object'&&Number(val.quantity)>0){
+    if(val.product_id==='chargeur-rapide'||String(val.name||'').toLowerCase()==='chargeur rapide')continue;
+    out[key]={...val,quantity:Math.floor(Number(val.quantity))};
+   }
   }
   return out;
  }
  function readCart(){try{return migrateCart(JSON.parse(localStorage.getItem(CART_KEY)||'{}'));}catch(e){return {};}}
  let cart=readCart();
-  let appliedPromo=null, promoMessage='';
- function save(){localStorage.setItem(CART_KEY,JSON.stringify(cart));savedOrder=null;render();}
+ let promoState=null;
+ function save(){
+  localStorage.setItem(CART_KEY,JSON.stringify(cart));
+  savedOrder=null;
+  if(promoState){promoState=null;const msg=$('promoCodeMessage');if(msg)msg.textContent='Panier modifié : applique à nouveau ton code promo.';}
+  render();
+ }
  function entries(){return Object.entries(cart).filter(([,it])=>Number(it.quantity)>0);}
  function subtotal(){return entries().reduce((sum,[,it])=>sum+Number(it.price||0)*Number(it.quantity),0);}
  function count(){return entries().reduce((sum,[,it])=>sum+Number(it.quantity),0);}
-  function promoDiscount(sub=subtotal()){if(!appliedPromo)return 0;const v=Number(appliedPromo.discount_value||0);return Math.min(sub,appliedPromo.discount_type==='percent'?sub*v/100:v);}
-  function payableSubtotal(){return Math.max(0,subtotal()-promoDiscount());}
-  async function applyPromo(){
-   const input=$('promoCodeInput'),status=$('promoCodeMessage'),button=$('applyPromoCode');
-   const code=String(input?.value||'').trim().toUpperCase();
-   if(!code){if(status)status.textContent='Saisis un code promo.';return;}
-   if(button)button.disabled=true;
-   try{
-    if(!db)throw new Error('Service indisponible. Réessaie plus tard.');
-    const {data,error}=await db.from('promo_codes').select('id,code,discount_type,discount_value,min_subtotal,max_uses,uses_count,starts_at,expires_at,active').eq('code',code).eq('active',true).maybeSingle();
-    if(error)throw error;
-    if(!data)throw new Error('Code promo invalide ou désactivé.');
-    const now=Date.now(),sub=subtotal();
-    if(data.starts_at&&new Date(data.starts_at).getTime()>now)throw new Error('Ce code promo n’est pas encore valable.');
-    if(data.expires_at&&new Date(data.expires_at).getTime()<now)throw new Error('Ce code promo a expiré.');
-    if(data.max_uses!==null&&Number(data.uses_count)>=Number(data.max_uses))throw new Error('Ce code promo a atteint sa limite d’utilisation.');
-    if(sub<Number(data.min_subtotal||0))throw new Error('Montant minimum requis : '+money(data.min_subtotal)+'.');
-    if(!['percent','fixed'].includes(data.discount_type)||Number(data.discount_value)<=0)throw new Error('Code promo mal configuré.');
-    appliedPromo=data;promoMessage='Code '+code+' appliqué : −'+money(promoDiscount())+'.';
-    if(status)status.textContent=promoMessage;
-    render();
-   }catch(e){appliedPromo=null;promoMessage='';if(status)status.textContent=e.message||'Impossible de vérifier ce code.';render();}
-   finally{if(button)button.disabled=false;}
-  }
-  function removePromo(){appliedPromo=null;promoMessage='';if($('promoCodeInput'))$('promoCodeInput').value='';if($('promoCodeMessage'))$('promoCodeMessage').textContent='Code promo retiré.';render();}
  function available(item){if(item.variant_id)return Number(variants[item.variant_id]?.stock_quantity||0);const p=products[item.product_id];return p&&p.in_stock===false?0:Number(p?.stock_quantity||0);}
  function stockLabel(item){const n=available(item);return n>0?`${n} en stock`:'Rupture de stock';}
  async function loadStock(){
@@ -63,8 +46,8 @@
    if(p.error)throw p.error;
    (p.data||[]).forEach(x=>products[x.id]=x);
    const v=await db.from('product_variants').select('variant_id,product_id,variant_name,stock_quantity');
-   if(v.error)console.warn('MlnPods variantes non chargées :',v.error.message);
-   else (v.data||[]).forEach(x=>variants[x.variant_id]=x);
+   if(v.error)throw v.error;
+   (v.data||[]).forEach(x=>variants[x.variant_id]=x);
    stockReady=true;
    for(const [sku,it] of entries()){
     const prod=products[it.product_id];if(prod&&Number.isFinite(Number(prod.price)))it.price=Number(prod.price);
@@ -73,8 +56,12 @@
    localStorage.setItem(CART_KEY,JSON.stringify(cart));render();
   }catch(e){console.error('MlnPods stocks:',e);stockReady=false;}
  }
- const HOME_PRODUCT_IMAGES={'airpods-max':'assets/panier-airpods-max.jpg','airpods':'assets/panier-airpods.jpg','watch':'assets/panier-watch.jpg','chargeur-rapide':'assets/panier-chargeur.jpg'};
- function productImage(card,productId){if(productId&&HOME_PRODUCT_IMAGES[productId])return HOME_PRODUCT_IMAGES[productId];const img=card?.querySelector('img.product-photo')||card?.querySelector('.gallery img')||card?.querySelector('img');return img?.getAttribute('src')||'';}
+ function productImage(card,productId){
+  const extra=card?.querySelector('.home-extra-photo');
+  if(extra&&!extra.hidden&&extra.getAttribute('src'))return extra.getAttribute('src');
+  const img=card?.querySelector('img.product-photo')||card?.querySelector('.gallery img')||card?.querySelector('img');
+  return img?.getAttribute('src')||'';
+ }
  function getCurrentProduct(){const body=document.body;const id=body.dataset.productId||'';const variant=body.dataset.variantId||$('mlnVariantSelect')?.value||null;const name=body.dataset.product||'';const price=Number(body.dataset.price||0);return {product_id:id,variant_id:variant,name:variant?(variant==='airpods-max-noir'?'AirPods Max - Noir':( $('mlnVariantSelect')?.selectedOptions[0]?.textContent||name)):name,price,image:productImage(document.querySelector('main'),id)};}
  function addItem(item,qty){
   if(!stockReady){alert('Les stocks ne sont pas disponibles pour le moment. Actualise la page et réessaie.');return false;}
@@ -89,14 +76,14 @@
    const max=available(it),q=Number(it.quantity);
    return `<div class="cart-line mln-cart-line"><img src="${esc(productImage(null,it.product_id)||it.image||'')}" alt="" style="width:58px;height:58px;object-fit:cover;border-radius:9px;background:#171717" onerror="this.style.display='none'"><div><strong>${esc(it.name)}</strong><small>${money(it.price)} / unité · ${esc(stockLabel(it))}</small><div class="qty-controls mln-qty-controls"><button type="button" data-cart-minus="${esc(sku)}" aria-label="Diminuer">−</button><span>${q}</span><button type="button" data-cart-plus="${esc(sku)}" aria-label="Augmenter" ${q>=max?'disabled':''}>+</button><button type="button" data-cart-remove="${esc(sku)}">Supprimer</button></div></div><strong>${money(Number(it.price||0)*q)}</strong></div>`;
   }).join(''):'<p class="notice mln-empty">Ton panier est vide pour le moment.</p>';}
-  const sub=$('cartSubtotal');if(sub)sub.textContent=money(subtotal());
-  if($('cartSubtotalCheckout'))$('cartSubtotalCheckout').textContent=money(subtotal());
+  const subTotalValue=subtotal(),discount=Math.min(subTotalValue,Math.max(0,Number(promoState?.discount||0)));
+  const sub=$('cartSubtotal');if(sub)sub.textContent=money(subTotalValue);
+  if($('cartSubtotalCheckout'))$('cartSubtotalCheckout').textContent=money(subTotalValue);
+  if($('checkoutPromoDiscount'))$('checkoutPromoDiscount').textContent=discount>0?'−'+money(discount):money(0);
   const currentMode=$('deliveryMode')?.value;
-  const currentFee=currentMode?deliveryFee(currentMode,subtotal()):null;
-  if($('checkoutPromoDiscount'))$('checkoutPromoDiscount').textContent=appliedPromo?'−'+money(promoDiscount()):money(0);
-  if($('promoCodeMessage')&&appliedPromo)$('promoCodeMessage').textContent='Code '+appliedPromo.code+' appliqué : −'+money(promoDiscount())+'.';
+  const currentFee=currentMode?deliveryFee(currentMode,subTotalValue):null;
   if($('checkoutDeliveryFee'))$('checkoutDeliveryFee').textContent=currentFee===null?'À choisir':money(currentFee);
-  if($('checkoutGrandTotal'))$('checkoutGrandTotal').textContent=currentFee===null?'—':money(payableSubtotal()+currentFee);
+  if($('checkoutGrandTotal'))$('checkoutGrandTotal').textContent=currentFee===null?'—':money(Math.max(0,subTotalValue-discount)+(currentFee||0));
   const start=$('checkoutStart');if(start)start.disabled=!entries().length;
   const productStart=$('mlnCheckout');if(productStart)productStart.disabled=!entries().length;
   document.querySelectorAll('[data-product-variant],[data-home-variant]').forEach(btn=>{
@@ -105,7 +92,17 @@
    const n=v?Number(v.stock_quantity||0):null;
    btn.disabled=false;
    btn.title=v?(n>0?`${n} en stock`:'Rupture de stock'):'Stock en cours de vérification';
-   if(btn.dataset.homeVariant)btn.textContent=v?`${baseLabel} · ${n>0?n+' en stock':'Rupture de stock'}`:`${baseLabel} · Stock…`;
+   if(btn.dataset.homeVariant||btn.dataset.productVariant)btn.textContent=v?`${baseLabel} · ${n>0?n+' en stock':'Rupture de stock'}`:`${baseLabel} · Stock…`;
+  });
+  document.querySelectorAll('[data-stock-variant]').forEach(el=>{
+   const v=variants[el.dataset.stockVariant],n=v?Number(v.stock_quantity||0):null;
+   el.textContent=v?(n>0?`✓ ${n} en stock`:'✕ Rupture de stock'):'Stock en cours de vérification…';
+   el.classList.toggle('is-in',!!v&&n>0);el.classList.toggle('is-out',!!v&&n<=0);
+  });
+  document.querySelectorAll('[data-stock-product]').forEach(el=>{
+   const p=products[el.dataset.stockProduct],n=p?Number(p.stock_quantity||0):null;
+   el.textContent=p?(n>0?`✓ ${n} en stock`:'✕ Rupture de stock'):'Stock en cours de vérification…';
+   el.classList.toggle('is-in',!!p&&n>0);el.classList.toggle('is-out',!!p&&n<=0);
   });
   const status=$('mlnVariantStock');
   if(status){
@@ -118,11 +115,29 @@
   const add=$('mlnAddToCart');
   if(add && document.body.dataset.productId){
    const id=document.body.dataset.variantId||$('mlnVariantSelect')?.value;
-   const v=id?variants[id]:null;
-   add.disabled=!!id&&(!v||Number(v.stock_quantity||0)<=0);
+   if(id){
+    const v=variants[id];
+    add.disabled=!v||Number(v.stock_quantity||0)<=0;
+   }else{
+    const p=products[document.body.dataset.productId];
+    add.disabled=!p||p.in_stock===false||Number(p.stock_quantity||0)<=0;
+   }
    if(add.disabled)add.textContent='Rupture de stock';
    else if(document.body.dataset.product==='AirPods')add.textContent='🛒 Ajouter au panier — 30 €';
   }
+  document.querySelectorAll('article.product .add-cart').forEach(button=>{
+   const card=button.closest('article.product'),variant=button.dataset.variantId||card?.querySelector('.home-variant')?.value;
+   if(variant){
+    const v=variants[variant],qty=Number(v?.stock_quantity||0);
+    button.disabled=!v||qty<=0;
+    if(button.disabled)button.textContent='Rupture de stock';
+    else button.textContent=variant==='airpods-max-noir'?'Ajouter au panier — Noir':'Ajouter au panier';
+   }else{
+    const product=products[button.dataset.productId];
+    button.disabled=!product||product.in_stock===false||Number(product.stock_quantity||0)<=0;
+    if(button.disabled)button.textContent='Rupture de stock';
+   }
+  });
  }
  function deliveryFee(mode,sub){if(mode==='besancon')return sub>=30?0:5;if(mode==='saint-claude')return 0;if(mode==='relay')return 5;if(mode==='home')return 10;return 0;}
  function deliveryLabel(mode){return ({besancon:'Livraison à Besançon','saint-claude':'Retrait secteur Saint-Claude',relay:'Mondial Relay',home:'Livraison à domicile'})[mode]||'À choisir';}
@@ -151,7 +166,11 @@
   const mode=$('deliveryMode')?.value,sub=subtotal(),fee=deliveryFee(mode,sub);
   const first=$('customerFirstName')?.value.trim()||'',last=$('customerLastName')?.value.trim()||'';
   const client=[first,last].filter(Boolean).join(' ')||'Non renseigné';
-  const actualDiscount=Number(order?.discount_amount??(appliedPromo?promoDiscount(sub):0));const actualTotal=Number(order?.total??(Math.max(0,sub-actualDiscount)+fee));const actualCode=order?.promo_code||appliedPromo?.code||null;const lines=['🎧 NOUVELLE COMMANDE — MLNPODS','',`👤 Client : ${client}`,'', '🛍️ PRODUITS',...entries().map(([,it])=>`• ${it.quantity} × ${it.name} — ${money(it.price)} / unité = ${money(it.price*it.quantity)}`),'',`🧾 Sous-total : ${money(sub)}`,...(actualCode?[`🎟️ Code promo : ${actualCode}`,`💸 Réduction : −${money(actualDiscount)}`]:[]),`🚚 Livraison : ${deliveryLabel(mode)} — ${money(Number(order?.delivery_fee??fee))}`,`💶 TOTAL : ${money(actualTotal)}`,'',`📞 Téléphone : ${$('customerPhone')?.value.trim()||''}`];
+  const discount=Math.min(sub,Math.max(0,Number(promoState?.discount||order?.discount_amount||0)));
+  const promoCode=promoState?.code||order?.promo_code||'';
+  const lines=['🎧 NOUVELLE COMMANDE — MLNPODS','',`👤 Client : ${client}`,'', '🛍️ PRODUITS',...entries().map(([,it])=>`• ${it.quantity} × ${it.name} — ${money(it.price)} / unité = ${money(it.price*it.quantity)}`),'',`🧾 Sous-total : ${money(sub)}`];
+  if(promoCode)lines.push(`🎟️ Code promo : ${promoCode}`);
+  lines.push(`💸 Réduction : ${money(discount)}`,`🚚 Livraison : ${deliveryLabel(mode)} — ${money(fee)}`,`💶 TOTAL : ${money(Math.max(0,sub-discount)+fee)}`,'',`📞 Téléphone : ${$('customerPhone')?.value.trim()||''}`);
   const a=addressValue(mode);if(a)lines.push(mode==='relay'?'📦 Point relais : '+a:'🏠 Adresse / retrait : '+a);
   if($('customerEmail')?.value.trim())lines.push('✉️ E-mail : '+$('customerEmail').value.trim());
   if($('customerSnapchat')?.value.trim())lines.push('👻 Snapchat : '+$('customerSnapchat').value.trim());
@@ -178,21 +197,55 @@
   if(!db)throw new Error('Connexion à la base de commandes indisponible.');
   const mode=$('deliveryMode').value;
   const payload=entries().map(([,it])=>({product_id:it.product_id,variant_id:it.variant_id||null,quantity:Number(it.quantity)}));
-  const {data,error}=await db.rpc('mlnpods_place_order',{p_items:payload,p_delivery_code:mode,p_address:[[$('customerFirstName')?.value.trim(),$('customerLastName')?.value.trim()].filter(Boolean).join(' '),addressValue(mode)].filter(Boolean).join(' — '),p_phone:$('customerPhone').value.trim(),p_email:$('customerEmail').value.trim()||null,p_promo_code:appliedPromo?.code||null});
+  const {data,error}=await db.rpc('mlnpods_place_order_with_promo',{p_items:payload,p_delivery_code:mode,p_address:[[$('customerFirstName')?.value.trim(),$('customerLastName')?.value.trim()].filter(Boolean).join(' '),addressValue(mode)].filter(Boolean).join(' — '),p_phone:$('customerPhone').value.trim(),p_email:$('customerEmail').value.trim()||null,p_promo_code:promoState?.code||null});
   if(error)throw new Error(error.message||'La commande n’a pas pu être enregistrée.');
   if(!data?.success)throw new Error(data?.message||'La commande n’a pas pu être enregistrée.');
   savedOrder=data;
   await loadStock();
   return data;
  }
+
+ async function applyPromo(){
+  const input=$('promoCodeInput'),message=$('promoCodeMessage'),button=$('applyPromoCode');
+  const code=(input?.value||'').trim().toUpperCase();
+  if(!code){promoState=null;if(message)message.textContent='Saisis un code promo.';render();return false;}
+  if(!db){if(message)message.textContent='Connexion indisponible. Réessaie.';return false;}
+  if(button){button.disabled=true;button.textContent='Vérification…';}
+  try{
+   const {data,error}=await db.rpc('mlnpods_validate_promo',{p_code:code,p_subtotal:subtotal()});
+   if(error)throw error;
+   const result=Array.isArray(data)?data[0]:data;
+   if(!result?.valid){promoState=null;if(message)message.textContent=result?.message||'Code promo invalide ou expiré.';render();return false;}
+   else{
+    promoState={code:result.code||code,discount:Number(result.discount_amount||0)};
+    if(message)message.textContent=`✓ Code accepté : ${money(promoState.discount)} de réduction.`;
+   }
+   render();
+   return true;
+  }catch(e){
+   promoState=null;
+   if(message)message.textContent='Impossible de vérifier ce code : '+(e.message||'réessaie après configuration SQL.');
+   render();
+   return false;
+  }finally{if(button){button.disabled=false;button.textContent='Appliquer';}}
+ }
+ function clearPromo(){
+  promoState=null;
+  if($('promoCodeInput'))$('promoCodeInput').value='';
+  if($('promoCodeMessage'))$('promoCodeMessage').textContent='Code promo retiré.';
+  render();
+ }
+
  async function send(){
   if(!validate())return;
   const button=$('sendWhatsApp');if(button)button.disabled=true;
   try{
+   const typedCode=$('promoCodeInput')?.value.trim()||'';
+   if(typedCode&&(!promoState||promoState.code!==typedCode.toUpperCase())){const ok=await applyPromo();if(!ok)throw new Error('Le code promo n’est pas valide.');}
    const order=await placeOrder();
    const text=summary(order);$('orderSummary').value=text;
    // La commande est enregistrée et le message WhatsApp préparé : vider le panier maintenant.
-   cart={};localStorage.removeItem(CART_KEY);savedOrder=null;appliedPromo=null;render();
+   cart={};localStorage.removeItem(CART_KEY);savedOrder=null;render();
    $('cartOverlay')?.classList.remove('open');
    $('checkoutForm').hidden=true;
    sessionStorage.setItem('mlnpods_return_home_after_whatsapp','1');
@@ -201,6 +254,27 @@
    alert('Impossible de préparer la commande : '+(e.message||'Erreur inconnue')+'\nRéessaie dans un instant.');
   }finally{if(button)button.disabled=false;}
  }
+
+ async function sendSnapchat(){
+  if(!validate())return;
+  const button=$('sendSnapchat');if(button){button.disabled=true;button.textContent='Préparation de la commande…';}
+  const popup=window.open('about:blank','_blank');
+  try{
+   const typedCode=$('promoCodeInput')?.value.trim()||'';
+   if(typedCode&&(!promoState||promoState.code!==typedCode.toUpperCase())){const ok=await applyPromo();if(!ok)throw new Error('Le code promo n’est pas valide.');}
+   const order=await placeOrder();
+   const text=summary(order);$('orderSummary').value=text;
+   let copied=false;
+   try{await navigator.clipboard.writeText(text);copied=true;}catch(e){}
+   cart={};localStorage.removeItem(CART_KEY);savedOrder=null;render();
+   if(copied){$('cartOverlay')?.classList.remove('open');$('checkoutForm').hidden=true;sessionStorage.setItem('mlnpods_return_home_after_whatsapp','1');}
+   else{$('checkoutForm').hidden=false;$('orderSummary').hidden=false;$('orderSummary').scrollIntoView({behavior:'smooth',block:'center'});}
+   if(popup){popup.location.href=SNAPCHAT;}else{window.location.href=SNAPCHAT;}
+   if(!copied)alert('Commande enregistrée. Copie le récapitulatif affiché puis colle-le dans Snapchat.');
+  }catch(e){if(popup)popup.close();alert('Impossible de préparer la commande : '+(e.message||'Erreur inconnue')+'\nRéessaie dans un instant.');}
+  finally{if(button){button.disabled=false;button.textContent='👻 Envoyer sur Snapchat';}}
+ }
+
  function init(){
   if(!document.getElementById('mln-cart-layout-style')){const st=document.createElement('style');st.id='mln-cart-layout-style';st.textContent='.mln-cart-line{grid-template-columns:68px minmax(0,1fr) auto!important;align-items:center}.mln-cart-line>img{width:68px!important;height:68px!important;object-fit:cover!important;border:1px solid #b18b32;box-shadow:0 2px 10px #0005}.mln-qty-controls button:disabled{opacity:.35;cursor:not-allowed}.checkout-form[hidden]{display:none!important}.mln-relay-help{font-size:12px;color:#cbbd8b;margin-top:10px;line-height:1.5}';document.head.appendChild(st);}
   // Shared menu and cart open/close controls (home and product pages).
@@ -209,7 +283,7 @@
   document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>$(b.dataset.close)?.classList.remove('open')));
   ['menuOverlay','cartOverlay'].forEach(id=>$(id)?.addEventListener('click',e=>{if(e.target.id===id)e.currentTarget.classList.remove('open');}));
   $('cartItems')?.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const sku=b.dataset.cartPlus||b.dataset.cartMinus||b.dataset.cartRemove;if(!sku)return;const it=cart[sku];if(!it)return;if(b.dataset.cartPlus){if(it.quantity<available(it))it.quantity++;else alert('Stock maximum atteint.');}if(b.dataset.cartMinus)it.quantity=Math.max(0,it.quantity-1);if(b.dataset.cartRemove||it.quantity===0)delete cart[sku];save();});
-  document.querySelectorAll('.add-cart').forEach(btn=>btn.addEventListener('click',()=>{const card=btn.closest('article.product');const name=btn.dataset.product||card?.querySelector('h3')?.textContent.trim();const productId=btn.dataset.productId||({'AirPods Max':'airpods-max','AirPods':'airpods','Watch':'watch','Chargeur rapide':'chargeur-rapide'}[name]);const variantId=btn.dataset.variantId||(name==='AirPods'?card?.querySelector('.home-variant')?.value:null);const variantName=variantId?({'airpods-5':'AirPods 5','airpods-4':'AirPods 4','airpods-pro-3':'AirPods Pro 3','airpods-pro-2':'AirPods Pro 2','airpods-max-noir':'Noir'}[variantId]):null;const price=Number((card?.querySelector('.current-price')?.textContent||'').replace(',','.').replace(/[^\d.]/g,''))||Number(products[productId]?.price||0);const item={product_id:productId,variant_id:variantId||null,name:variantName?(name==='AirPods Max'?'AirPods Max - Noir':variantName):name,price,image:productImage(card,productId)};if(addItem(item,1))$('cartOverlay')?.classList.add('open');}));
+  document.querySelectorAll('.add-cart').forEach(btn=>btn.addEventListener('click',()=>{const card=btn.closest('article.product');const name=btn.dataset.product||card?.querySelector('h3')?.textContent.trim();const productId=btn.dataset.productId||({'AirPods Max':'airpods-max','AirPods':'airpods','Watch':'watch'}[name]);const variantId=btn.dataset.variantId||(name==='AirPods'?card?.querySelector('.home-variant')?.value:null);const variantName=variantId?({'airpods-5':'AirPods 5','airpods-4':'AirPods 4','airpods-pro-3':'AirPods Pro 3','airpods-pro-2':'AirPods Pro 2','airpods-max-noir':'Noir'}[variantId]):null;const price=Number((card?.querySelector('.current-price')?.textContent||'').replace(',','.').replace(/[^\d.]/g,''))||Number(products[productId]?.price||0);const item={product_id:productId,variant_id:variantId||null,name:variantName?(name==='AirPods Max'?'AirPods Max - Noir':variantName):name,price,image:productImage(card,productId)};if(addItem(item,1))$('cartOverlay')?.classList.add('open');}));
   $('mlnVariantSelect')?.addEventListener('change',render);
   document.querySelectorAll('[data-product-variant]').forEach(btn=>btn.addEventListener('click',()=>{
    $('mlnVariantSelect').value=btn.dataset.productVariant;
@@ -218,9 +292,23 @@
    render();
   }));
   document.querySelectorAll('[data-home-variant]').forEach(btn=>btn.addEventListener('click',()=>{
-   const card=btn.closest('article.product');const hidden=card?.querySelector('.home-variant');
-   if(hidden)hidden.value=btn.dataset.homeVariant;
+   const card=btn.closest('article.product'),variant=btn.dataset.homeVariant;
+   const hidden=card?.querySelector('.home-variant');
+   if(hidden)hidden.value=variant;
    card?.querySelectorAll('[data-home-variant]').forEach(x=>x.setAttribute('aria-pressed',String(x===btn)));
+   const photo=card?.querySelector('.home-extra-photo'),view=card?.querySelector('a.view');
+   const routes={
+    'airpods-5':{href:'AirPods-5.html',image:'assets/airpods5-01.jpeg',alt:'AirPods 5 — photo 1'},
+    'airpods-pro-3':{href:'AirPods-Pro-3.html',image:'assets/airpodspro3-01.jpeg',alt:'AirPods Pro 3 — photo 1'},
+    'airpods-4':{href:'AirPods.html',image:'',alt:''},
+    'airpods-pro-2':{href:'AirPods.html',image:'',alt:''}
+   };
+   const target=routes[variant];
+   if(target&&view)view.href=target.href;
+   if(photo&&target){
+    if(target.image){photo.src=target.image;photo.alt=target.alt;photo.hidden=false;}
+    else photo.hidden=true;
+   }
   }));
   const qty=$('mlnProductQty');if(qty){$('mlnQtyMinus')?.addEventListener('click',()=>qty.value=Math.max(1,(Number(qty.value)||1)-1));$('mlnQtyPlus')?.addEventListener('click',()=>qty.value=Math.min(99,(Number(qty.value)||1)+1));qty.addEventListener('change',()=>qty.value=Math.max(1,Math.min(99,Math.floor(Number(qty.value)||1))));}
   $('mlnAddToCart')?.addEventListener('click',()=>{
@@ -242,11 +330,12 @@
    openCheckout();
   });
   function refreshCheckoutTotals(){
-   const sub=subtotal(),mode=$('deliveryMode')?.value,fee=mode?deliveryFee(mode,sub):null;
+   const sub=subtotal(),discount=Math.min(sub,Math.max(0,Number(promoState?.discount||0)));
+   const mode=$('deliveryMode')?.value,fee=mode?deliveryFee(mode,sub):null;
    if($('cartSubtotalCheckout'))$('cartSubtotalCheckout').textContent=money(sub);
+   if($('checkoutPromoDiscount'))$('checkoutPromoDiscount').textContent=discount>0?'−'+money(discount):money(0);
    if($('checkoutDeliveryFee'))$('checkoutDeliveryFee').textContent=fee===null?'À choisir':money(fee);
-   if($('checkoutPromoDiscount'))$('checkoutPromoDiscount').textContent=appliedPromo?'−'+money(promoDiscount()):money(0);
-    if($('checkoutGrandTotal'))$('checkoutGrandTotal').textContent=fee===null?'—':money(payableSubtotal()+fee);
+   if($('checkoutGrandTotal'))$('checkoutGrandTotal').textContent=fee===null?'—':money(Math.max(0,sub-discount)+(fee||0));
   }
   document.querySelectorAll('[data-delivery-mode]').forEach(btn=>btn.addEventListener('click',()=>{
    const mode=btn.dataset.deliveryMode;$('deliveryMode').value=mode;
@@ -257,15 +346,19 @@
    ['relayName','relayStreetNumber','relayStreet','relayPostcode','relayCity'].forEach(id=>{const el=$(id);if(el)el.required=relay;});
    const relayComplement=$('relayAddressComplement');if(relayComplement)relayComplement.required=false;
    const shipped=mode==='home'||mode==='relay';
-   ['customerFirstName','customerLastName'].forEach(id=>{const el=$(id);if(el)el.required=shipped;});
+   ['customerFirstName','customerLastName'].forEach(id=>{const el=$(id);if(el)el.required=true;});
    const email=$('customerEmail');if(email)email.required=shipped;
    const emailLabel=email?.closest('label');
    if(emailLabel){const hint=emailLabel.querySelector('.mln-optional');if(hint)hint.textContent=shipped?'(obligatoire)':'(facultatif)';}
-   ['customerFirstName','customerLastName'].forEach(id=>{const el=$(id);const hint=el?.closest('label')?.querySelector('.mln-optional');if(hint)hint.textContent=shipped?'(obligatoire)':'(facultatif)';});
+   ['customerFirstName','customerLastName'].forEach(id=>{const el=$(id);const hint=el?.closest('label')?.querySelector('.mln-optional');if(hint)hint.textContent='(obligatoire)';});
    $('orderSummary').value='';refreshCheckoutTotals();
   }));
-  // Promo controls are attached globally below using event delegation.
+  $('applyPromoCode')?.addEventListener('click',applyPromo);
+  $('removePromoCode')?.addEventListener('click',clearPromo);
+  $('promoCodeInput')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();applyPromo();}});
+  $('promoCodeInput')?.addEventListener('input',()=>{if(promoState){promoState=null;render();}if($('promoCodeMessage'))$('promoCodeMessage').textContent='';});
   $('sendWhatsApp')?.addEventListener('click',send);
+  $('sendSnapchat')?.addEventListener('click',sendSnapchat);
   ['customerFirstName','customerLastName','customerPhone','customerEmail','customerSnapchat','customerStreetNumber','customerStreet','customerAddressComplement','customerPostcode','customerCity','relayName','relayStreetNumber','relayStreet','relayAddressComplement','relayPostcode','relayCity'].forEach(id=>$(id)?.addEventListener('input',()=>{$('orderSummary').value='';}));
   refreshCheckoutTotals();
   const returnHome=()=>{if(sessionStorage.getItem('mlnpods_return_home_after_whatsapp')==='1'&&document.visibilityState==='visible'){sessionStorage.removeItem('mlnpods_return_home_after_whatsapp');window.location.replace('index.html');}};
@@ -274,18 +367,5 @@
   window.addEventListener('storage',e=>{if(e.key===CART_KEY){cart=readCart();render();}});
   render();loadStock();
  }
- // Robust delegated listeners: they still work if the checkout is moved or rebuilt dynamically.
- document.addEventListener('click',e=>{
-  const apply=e.target.closest('#applyPromoCode');
-  if(apply){e.preventDefault();applyPromo();return;}
-  const remove=e.target.closest('#removePromoCode');
-  if(remove){e.preventDefault();removePromo();}
- });
- document.addEventListener('keydown',e=>{
-  if(e.target && e.target.id==='promoCodeInput' && e.key==='Enter'){
-   e.preventDefault();applyPromo();
-  }
- });
- window.MLNPODS_PROMO_HANDLER_VERSION='2.1-delegated';
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
