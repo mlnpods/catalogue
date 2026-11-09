@@ -37,7 +37,7 @@
  function entries(){return Object.entries(cart).filter(([,it])=>Number(it.quantity)>0);}
  function subtotal(){return entries().reduce((sum,[,it])=>sum+Number(it.price||0)*Number(it.quantity),0);}
  function count(){return entries().reduce((sum,[,it])=>sum+Number(it.quantity),0);}
- function available(item){if(item.variant_id)return Number(variants[item.variant_id]?.stock_quantity||0);const p=products[item.product_id];return p&&p.in_stock===false?0:Number(p?.stock_quantity||0);}
+ function available(item){if(item.variant_id)return Number(variants[item.variant_id]?.stock_quantity||0);const p=products[item.product_id];return Math.max(0,Number(p?.stock_quantity||0));}
  function stockLabel(item){const n=available(item);return n>0?`${n} en stock`:'Rupture de stock';}
  async function loadStock(){
   if(!db){stockReady=false;return;}
@@ -120,7 +120,7 @@
     add.disabled=!v||Number(v.stock_quantity||0)<=0;
    }else{
     const p=products[document.body.dataset.productId];
-    add.disabled=!p||p.in_stock===false||Number(p.stock_quantity||0)<=0;
+    add.disabled=!p||Number(p.stock_quantity||0)<=0;
    }
    if(add.disabled)add.textContent='Rupture de stock';
    else if(document.body.dataset.product==='AirPods')add.textContent='🛒 Ajouter au panier — 30 €';
@@ -134,7 +134,7 @@
     else button.textContent=variant==='airpods-max-noir'?'Ajouter au panier — Noir':'Ajouter au panier';
    }else{
     const product=products[button.dataset.productId];
-    button.disabled=!product||product.in_stock===false||Number(product.stock_quantity||0)<=0;
+    button.disabled=!product||Number(product.stock_quantity||0)<=0;
     if(button.disabled)button.textContent='Rupture de stock';
    }
   });
