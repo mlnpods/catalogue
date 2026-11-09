@@ -255,26 +255,6 @@
   }finally{if(button)button.disabled=false;}
  }
 
- async function sendSnapchat(){
-  if(!validate())return;
-  const button=$('sendSnapchat');if(button){button.disabled=true;button.textContent='Préparation de la commande…';}
-  const popup=window.open('about:blank','_blank');
-  try{
-   const typedCode=$('promoCodeInput')?.value.trim()||'';
-   if(typedCode&&(!promoState||promoState.code!==typedCode.toUpperCase())){const ok=await applyPromo();if(!ok)throw new Error('Le code promo n’est pas valide.');}
-   const order=await placeOrder();
-   const text=summary(order);$('orderSummary').value=text;
-   let copied=false;
-   try{await navigator.clipboard.writeText(text);copied=true;}catch(e){}
-   cart={};localStorage.removeItem(CART_KEY);savedOrder=null;render();
-   if(copied){$('cartOverlay')?.classList.remove('open');$('checkoutForm').hidden=true;sessionStorage.setItem('mlnpods_return_home_after_whatsapp','1');}
-   else{$('checkoutForm').hidden=false;$('orderSummary').hidden=false;$('orderSummary').scrollIntoView({behavior:'smooth',block:'center'});}
-   if(popup){popup.location.href=SNAPCHAT;}else{window.location.href=SNAPCHAT;}
-   if(!copied)alert('Commande enregistrée. Copie le récapitulatif affiché puis colle-le dans Snapchat.');
-  }catch(e){if(popup)popup.close();alert('Impossible de préparer la commande : '+(e.message||'Erreur inconnue')+'\nRéessaie dans un instant.');}
-  finally{if(button){button.disabled=false;button.textContent='👻 Envoyer sur Snapchat';}}
- }
-
  function init(){
   if(!document.getElementById('mln-cart-layout-style')){const st=document.createElement('style');st.id='mln-cart-layout-style';st.textContent='.mln-cart-line{grid-template-columns:68px minmax(0,1fr) auto!important;align-items:center}.mln-cart-line>img{width:68px!important;height:68px!important;object-fit:cover!important;border:1px solid #b18b32;box-shadow:0 2px 10px #0005}.mln-qty-controls button:disabled{opacity:.35;cursor:not-allowed}.checkout-form[hidden]{display:none!important}.mln-relay-help{font-size:12px;color:#cbbd8b;margin-top:10px;line-height:1.5}';document.head.appendChild(st);}
   // Shared menu and cart open/close controls (home and product pages).
