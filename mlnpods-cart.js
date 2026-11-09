@@ -47,7 +47,11 @@
    (p.data||[]).forEach(x=>products[x.id]=x);
    const v=await db.from('product_variants').select('variant_id,product_id,variant_name,stock_quantity');
    if(v.error)throw v.error;
-   (v.data||[]).forEach(x=>variants[x.variant_id]=x);
+   (v.data||[]).forEach(x=>{
+    variants[x.variant_id]=x;
+    const canonical=({'AirPods 5':'airpods-5','AirPods Pro 3':'airpods-pro-3','AirPods 4':'airpods-4','AirPods Pro 2':'airpods-pro-2'})[String(x.variant_name||'').trim()];
+    if(canonical)variants[canonical]={...x,variant_id:canonical};
+   });
    stockReady=true;
    for(const [sku,it] of entries()){
     const prod=products[it.product_id];if(prod&&Number.isFinite(Number(prod.price)))it.price=Number(prod.price);
@@ -120,10 +124,11 @@
     add.disabled=!v||Number(v.stock_quantity||0)<=0;
    }else{
     const p=products[document.body.dataset.productId];
-    add.disabled=!p||Number(p.stock_quantity||0)<=0;
+    const inStock=!!p&&Number(p.stock_quantity||0)>0;
+    add.disabled=!inStock;
+    add.textContent=inStock?'🛒 Ajouter au panier — '+money(p.price||0):'Rupture de stock';
    }
    if(add.disabled)add.textContent='Rupture de stock';
-   else if(document.body.dataset.product==='AirPods')add.textContent='🛒 Ajouter au panier — 30 €';
   }
   document.querySelectorAll('article.product .add-cart').forEach(button=>{
    const card=button.closest('article.product'),variant=button.dataset.variantId||card?.querySelector('.home-variant')?.value;

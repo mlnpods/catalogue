@@ -285,20 +285,21 @@ function renderProducts(){
  $('productsList').innerHTML=visibleProducts.length?visibleProducts.map(p=>{
  const n=String(p.name||'').trim().toLowerCase();
  const displayName=n==='airpods'?(activeProductFilter==='airpods5'?'AirPods 5':'AirPods Pro 3'):p.name;
- const qty=Number(p.stock_quantity||0),stockClass=qty<=0?'red':qty<=5?'orange':'green';
+ const modelVariant=variants.find(v=>String(v.product_id)===String(p.id)&&String(v.variant_name)===displayName);
+ const qty=n==='airpods'?Number(modelVariant?.stock_quantity||0):Number(p.stock_quantity||0),stockClass=qty<=0?'red':qty<=5?'orange':'green';
  const key=productImageKey(p),photo=n==='airpods'?(activeProductFilter==='airpods5'?'assets/airpods5-01.jpeg':'assets/airpodspro3-01.jpeg'):(key?PRODUCT_IMAGES[key]:'');
  const defaults=variantDefaults(p);
  const vars=variants.filter(v=>String(v.product_id)===String(p.id)&&(n!=='airpods'||defaults.includes(v.variant_name)));
- const isVariantProduct=false;
+ const isVariantProduct=n==='airpods';
  const variantRows=isVariantProduct?(vars.length?vars:defaults.map(name=>({variant_id:'',product_id:p.id,variant_name:name,stock_quantity:0,_missing:true}))):[];
  const variantMarkup=isVariantProduct?`<div class="stock-tools"><div class="stock-tools-head"><div><strong>🎛️ Stock par variante</strong><br><small>Chaque modèle possède sa propre quantité.</small></div><span class="pill ${variantsReady?'green':'orange'}">${variantsReady?'Synchronisé':'Configuration requise'}</span></div><div class="variant-grid">${variantRows.map(v=>`<div class="variant-item" data-variant-id="${esc(v.variant_id||'')}" data-variant-name="${esc(v.variant_name)}">${VARIANT_PHOTOS[v.variant_name]?`<img class="variant-photo" src="${VARIANT_PHOTOS[v.variant_name]}" alt="${esc(v.variant_name)}">`:''}<label>${esc(v.variant_name)}</label><div class="variant-line"><input class="variant-qty" type="number" min="0" step="1" value="${Number(v.stock_quantity||0)}" ${variantsReady?'':'disabled'}><span>unité(s)</span></div></div>`).join('')}</div><div style="display:flex;justify-content:flex-end;gap:10px;align-items:center;flex-wrap:wrap"><span class="save-status muted variant-status"></span><button class="btn btn-dark save-variants" ${variantsReady?'':'disabled'}>💾 Enregistrer les variantes</button></div></div>`:'';
  const restockVal=p.restock_at?new Date(p.restock_at).toISOString().slice(0,16):'';
  return `<article class="product-row" data-id="${esc(p.id)}" data-name="${esc(String(displayName||'').toLowerCase())}">
  <div class="product-thumb">${photo?`<img src="${photo}" alt="${esc(p.name)}">`:'<span>📦</span>'}</div>
- <div class="product-name"><strong>${esc(displayName)}</strong><small>${p.promo_enabled?'Promotion active':'Prix standard'} · ${p.in_stock?'Disponible':'Indisponible'}</small><span class="pill ${stockClass}">${qty<=0?'Rupture':qty+' disponible(s)'}</span></div>
+ <div class="product-name"><strong>${esc(displayName)}</strong><small>${p.promo_enabled?'Promotion active':'Prix standard'} · ${qty>0?'Disponible':'Indisponible'}</small><span class="pill ${stockClass}">${qty<=0?'Rupture':qty+' disponible(s)'}</span></div>
  <div class="product-edit"><div><label>Prix €</label><input class="price" type="number" min="0" step=".01" value="${Number(p.price||0)}"></div><div><label>Ancien €</label><input class="old-price" type="number" min="0" step=".01" value="${p.old_price??''}"></div></div>
  <div class="product-actions"><div><label class="muted">${isVariantProduct?'Stock total':'Stock'}</label><input class="quantity" type="number" min="0" step="1" value="${qty}" ${isVariantProduct?'readonly title="Calculé depuis les variantes"':''} aria-label="Quantité en stock"></div><button class="btn btn-gold save-product">Enregistrer</button></div>
- <div class="checks-inline"><label><input type="checkbox" class="promo" ${p.promo_enabled?'checked':''}> Promo</label><label><input type="checkbox" class="stock" ${p.in_stock?'checked':''}> En stock</label><span class="save-status muted product-status"></span></div>
+ <div class="checks-inline"><label><input type="checkbox" class="promo" ${p.promo_enabled?'checked':''}> Promo</label><label><input type="checkbox" class="stock" ${qty>0?'checked':''} ${isVariantProduct?'disabled title="Déterminé par le stock du modèle"':''}> En stock</label><span class="save-status muted product-status"></span></div>
  ${variantMarkup}
  <div class="stock-tools"><div class="stock-tools-head"><div><strong>⏳ Compte à rebours du réapprovisionnement</strong><br><small>Affiché sur le site lorsque le produit est en rupture.</small></div><span class="restock-status ${restockVal?'active':''}">${restockVal?'Date programmée':'Aucun compte à rebours'}</span></div><div class="restock-panel"><div class="restock-copy"><strong>Prochaine disponibilité estimée</strong><small>Choisis la date et l'heure du restock.</small></div><div class="restock-controls"><input type="datetime-local" class="restock-date" value="${restockVal}"><button class="btn btn-dark save-restock">⏱️ Enregistrer la date</button><button class="btn btn-quiet clear-restock">Effacer</button></div><span class="save-status muted restock-message"></span></div></div>
  </article>`;
@@ -309,7 +310,9 @@ async function saveProduct(button){
  const priceRaw=row.querySelector('.price').value,oldRaw=row.querySelector('.old-price').value,qtyRaw=row.querySelector('.quantity').value;
  const price=Number(priceRaw),old=oldRaw===''?null:Number(oldRaw),qty=Number(qtyRaw);
  if(priceRaw===''||!Number.isFinite(price)||price<0||!Number.isInteger(qty)||qty<0||(old!==null&&(!Number.isFinite(old)||old<0))){status.textContent='Vérifie les valeurs.';return;}
- const changes={price,old_price:old,promo_enabled:row.querySelector('.promo').checked,stock_quantity:qty,in_stock:row.querySelector('.stock').checked,updated_at:new Date().toISOString()};
+ const isVariantProduct=String(p?.name||'').trim().toLowerCase()==='airpods';
+ const changes={price,old_price:old,promo_enabled:row.querySelector('.promo').checked,updated_at:new Date().toISOString()};
+ if(!isVariantProduct){changes.stock_quantity=qty;changes.in_stock=row.querySelector('.stock').checked;}
  button.disabled=true;status.textContent='Enregistrement…';
  const {error}=await db.from('products').update(changes).eq('id',row.dataset.id);
  button.disabled=false;
@@ -324,7 +327,7 @@ async function saveVariants(button){
  button.disabled=true;status.textContent='Enregistrement…';
  try{
   for(const item of items){
-   const {error}=await db.from('product_variants').upsert({variant_id:item.variant_id||slugify(item.variant_name,p.id),product_id:item.product_id,variant_name:item.variant_name,stock_quantity:item.stock_quantity,updated_at:new Date().toISOString()},{onConflict:'product_id,variant_name'});
+   const {error}=await db.from('product_variants').upsert({variant_id:canonicalVariantId(item.variant_name)||item.variant_id||slugify(item.variant_name,p.id),product_id:item.product_id,variant_name:item.variant_name,stock_quantity:item.stock_quantity,updated_at:new Date().toISOString()},{onConflict:'product_id,variant_name'});
    if(error)throw error;
   }
   const allVariants=variants.filter(v=>String(v.product_id)===String(p.id));
@@ -336,6 +339,10 @@ async function saveVariants(button){
   status.textContent='✓ Variantes enregistrées';await loadProducts();
  }catch(e){status.textContent='Erreur : '+(e.message||'Enregistrement impossible.');}
  finally{button.disabled=false;}
+}
+function canonicalVariantId(name){
+ const n=String(name||'').trim();
+ return ({'AirPods 5':'airpods-5','AirPods Pro 3':'airpods-pro-3','AirPods 4':'airpods-4','AirPods Pro 2':'airpods-pro-2'})[n]||'';
 }
 function slugify(name,id){return String(id)+'-'+String(name).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');}
 async function saveRestock(button,clear=false){
