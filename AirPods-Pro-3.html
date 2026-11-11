@@ -378,4 +378,16 @@ header.mln-header{position:sticky;top:0;z-index:100;background:#050505ee;backdro
 <script id="mln-carousel-script-v2">
 (()=>{document.querySelectorAll('[data-carousel]').forEach(root=>{const track=root.querySelector('.mln-carousel-track');if(!track)return;const slides=[...track.children],dots=[...root.parentElement.querySelectorAll('[data-slide-to]')];let i=0,startX=0,delta=0,timer;const show=n=>{i=(n+slides.length)%slides.length;track.style.transform=`translateX(-${i*100}%)`;dots.forEach((d,k)=>d.classList.toggle('active',k===i));slides.forEach((s,k)=>{const v=s.querySelector('video');if(v){if(k===i){v.play().catch(()=>{});}else{v.pause();}}});};const restart=()=>{clearInterval(timer);timer=setInterval(()=>show(i+1),5000)};root.querySelector('.prev')?.addEventListener('click',()=>{show(i-1);restart()});root.querySelector('.next')?.addEventListener('click',()=>{show(i+1);restart()});dots.forEach(d=>d.addEventListener('click',()=>{show(Number(d.dataset.slideTo));restart()}));root.addEventListener('touchstart',e=>{startX=e.touches[0].clientX;delta=0;clearInterval(timer)},{passive:true});root.addEventListener('touchmove',e=>{delta=e.touches[0].clientX-startX},{passive:true});root.addEventListener('touchend',()=>{if(Math.abs(delta)>35)show(i+(delta<0?1:-1));restart()});show(0);restart()});})();
 </script>
+<script>
+(function(){
+ try {
+  var sb=window.supabase;
+  if(!sb||!sb.createClient)return;
+  var client=sb.createClient('https://fvighhpzcjzioyijtmzo.supabase.co','sb_publishable_4-7YlOeRwbtA9GTavIxLmQ_6nAuSryg');
+  var path=location.pathname.toLowerCase();
+  var key=path.includes('airpods-max')?'airpods-max':path.includes('airpods-pro-3')?'airpods-pro-3':path.includes('airpods-5')?'airpods-5':path.includes('watch')?'watch':path.includes('chargeur')?'chargeur-rapide':'accueil';
+  client.from('product_page_views').insert({page_key:key,page_url:location.pathname}).then(function(){});
+ } catch(e) {}
+})();
+</script>
 </body></html>

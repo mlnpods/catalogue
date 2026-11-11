@@ -721,4 +721,16 @@ header{height:92px!important;position:sticky;top:0;z-index:100;background:#05050
 <script src="mlnpods-cart.js?v=20261109-full"></script>
 
 <script src="mlnpods-sync.js"></script>
+<script>
+(function(){
+ try {
+  var sb=window.supabase;
+  if(!sb||!sb.createClient)return;
+  var client=sb.createClient('https://fvighhpzcjzioyijtmzo.supabase.co','sb_publishable_4-7YlOeRwbtA9GTavIxLmQ_6nAuSryg');
+  var path=location.pathname.toLowerCase();
+  var key=path.includes('airpods-max')?'airpods-max':path.includes('airpods-pro-3')?'airpods-pro-3':path.includes('airpods-5')?'airpods-5':path.includes('watch')?'watch':path.includes('chargeur')?'chargeur-rapide':'accueil';
+  client.from('product_page_views').insert({page_key:key,page_url:location.pathname}).then(function(){});
+ } catch(e) {}
+})();
+</script>
 </body></html>
