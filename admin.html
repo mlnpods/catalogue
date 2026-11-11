@@ -23,9 +23,9 @@
 .field{text-align:left;margin:14px 0}.field label{display:block;font-size:12px;color:#bbb;margin:0 0 7px}.field input,.field select,.field textarea{width:100%;background:#090909;border:1px solid #393939;color:#fff;border-radius:10px;padding:12px 13px;outline:none}.field input:focus,.field select:focus{border-color:var(--gold)}
 .btn{border:0;border-radius:10px;padding:11px 15px;font-weight:800}.btn-gold{background:var(--gold);color:#111}.btn-dark{background:#242424;border:1px solid #393939;color:#eee}.btn-quiet{background:transparent;border:1px solid #393939;color:#ccc}.btn:disabled{opacity:.55;cursor:wait}.login-card .btn{width:100%;margin-top:8px}.message{min-height:18px;color:#ccc;font-size:12px;margin:13px 0 0;overflow-wrap:anywhere}
 .app{min-height:100vh;display:grid;grid-template-columns:252px minmax(0,1fr)}
-.sidebar{background:var(--side);border-right:1px solid var(--line);padding:23px 15px;display:flex;flex-direction:column;gap:25px;position:sticky;top:0;height:100vh}
+.sidebar{background:var(--side);border-right:1px solid var(--line);padding:23px 15px;display:flex;flex-direction:column;gap:18px;position:sticky;top:0;height:100vh;overflow-y:auto;min-height:0}
 .brand{display:flex;align-items:center;gap:11px;padding:0 8px 20px;border-bottom:1px solid var(--line)}
-.brand img{width:58px;height:58px;object-fit:contain;flex:none;filter:drop-shadow(0 3px 10px #d7a90022)}.brand strong{letter-spacing:1.5px;font-size:14px}.brand small{display:block;color:#777;font-size:9px;letter-spacing:2px;margin-top:3px}
+.brand img{width:38px;height:38px;object-fit:contain;flex:none;filter:drop-shadow(0 3px 10px #d7a90022)}.brand strong{letter-spacing:1.5px;font-size:14px}.brand small{display:block;color:#777;font-size:9px;letter-spacing:2px;margin-top:3px}
 .nav-label{font-size:10px;letter-spacing:1.8px;color:#666;font-weight:800;padding:0 10px;margin-bottom:-17px}
 .nav{display:grid;gap:6px}.nav button{display:flex;align-items:center;gap:12px;width:100%;border:1px solid transparent;border-radius:11px;padding:12px 13px;background:transparent;color:#aaa;text-align:left;font-weight:700}
 .nav button:hover{background:#ffffff08;color:#fff}.nav button.active{background:#f4c92813;border-color:#f4c92855;color:var(--gold)}
@@ -53,7 +53,7 @@ main{width:100%;max-width:1600px;margin:0 auto;padding:29px clamp(15px,3vw,42px)
 .empty{padding:25px;text-align:center;color:var(--muted);border:1px dashed #383838;border-radius:13px}
 .export-actions{display:flex;gap:8px;flex-wrap:wrap}.notice{color:var(--muted);font-size:11px;margin-top:15px}
 .table-wrap{overflow-x:auto}.summary-table{width:100%;border-collapse:collapse;font-size:12px}.summary-table th,.summary-table td{text-align:left;padding:10px;border-bottom:1px solid var(--line)}.summary-table th{color:var(--muted);font-weight:700}
-@media(max-width:1050px){.app{grid-template-columns:78px minmax(0,1fr)}.sidebar{padding:18px 9px}.brand{justify-content:center;padding:0 0 17px}.brand-copy,.nav-label,.nav-text,.side-foot .admin-copy{display:none}.nav button{justify-content:center;padding:13px 4px}.nav-ico{font-size:19px}.admin{justify-content:center}.side-foot{padding:15px 0}.cols{grid-template-columns:1fr}}
+@media(max-width:1050px){.app{grid-template-columns:68px minmax(0,1fr)}.sidebar{padding:12px 7px}.brand{justify-content:center;padding:0 0 17px}.brand-copy,.nav-label,.nav-text,.side-foot .admin-copy{display:none}.nav button{justify-content:center;padding:10px 3px;min-height:46px}.nav-ico{font-size:18px}.admin{justify-content:center}.side-foot{padding:15px 0}.cols{grid-template-columns:1fr}}
 @media(max-width:700px){main{padding:20px 12px 40px}.topbar{align-items:flex-start}.topbar h1{font-size:22px}.topbar p{font-size:11px}.top-actions .btn-quiet{display:none}.stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.card{padding:13px}.stat-value{font-size:23px}.chart{gap:4px;height:170px}.product-row{grid-template-columns:42px 1fr auto;gap:9px}.product-edit{grid-column:2}.checks-inline{grid-column:2}.product-actions{grid-column:1/-1;justify-content:space-between}.product-actions input{flex:1}.search{min-width:0;width:100%}.card-head{align-items:flex-start;flex-wrap:wrap}}
 @media print{body{background:#fff;color:#111}.sidebar,.topbar,.toolbar,.order-controls,.nav,.btn,.notice{display:none!important}.app{display:block}main{max-width:none;padding:0}.section{display:none!important}#orders{display:block!important}.order-card,.card{background:#fff;color:#111;border:1px solid #ccc;break-inside:avoid}.order-details,.order-meta,.muted{color:#333}.order-head h3,.order-total{color:#8b6900}.order-status{display:none}}
 
@@ -61,6 +61,8 @@ main{width:100%;max-width:1600px;margin:0 auto;padding:29px clamp(15px,3vw,42px)
 .site-link{display:flex;align-items:center;gap:9px;text-decoration:none;color:#f6d34b;background:#f4c92812;border:1px solid #6b571c;border-radius:12px;padding:11px 10px;margin:0 0 16px;font-size:12px;font-weight:800;transition:.2s}
 .site-link:hover{background:#f4c92824;transform:translateY(-1px)}.site-link b{margin-left:auto;font-size:16px}
 .nav-ico{font-size:20px!important;width:25px!important}
+.add-product-card{margin-top:14px}.add-product-card h2{margin:0 0 5px;font-size:19px}.add-product-card>p{margin:0 0 18px}.add-product-card form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:18px}.add-product-card form>strong,.add-product-card form>button,.add-product-card form>span{grid-column:1/-1}.add-product-card form input{width:100%;min-width:0;background:#090909;color:#fff;border:1px solid #393939;border-radius:12px;padding:14px;font:inherit}.add-product-card form input:focus{outline:1px solid var(--gold);border-color:var(--gold)}.add-product-card form button{padding:15px;font-size:15px}.add-product-note{background:#f4c92812;border:1px solid #5d4c1b;border-radius:12px;padding:13px;color:#d7c98e;font-size:12px}.add-product-intro{border-color:#5b4b1c}
+@media(max-width:700px){.add-product-card form{grid-template-columns:1fr}.add-product-card form>strong,.add-product-card form>button,.add-product-card form>span{grid-column:1}}
 .product-list{display:grid;gap:15px}
 .product-row{display:grid;grid-template-columns:84px minmax(150px,1fr) minmax(210px,1.1fr) minmax(210px,1fr);gap:15px;align-items:center;background:linear-gradient(145deg,#191919,#101010);border:1px solid #343434;border-radius:18px;padding:17px;transition:border-color .2s,transform .2s}
 .product-row:hover{border-color:#78611e;transform:translateY(-1px)}
@@ -111,9 +113,12 @@ main{width:100%;max-width:1600px;margin:0 auto;padding:29px clamp(15px,3vw,42px)
   <nav class="nav">
    <button class="active" data-tab="overview"><span class="nav-ico">🏠</span><span class="nav-text">Vue d'ensemble</span></button>
    <button data-tab="orders"><span class="nav-ico">📦</span><span class="nav-text">Commandes</span></button>
-   <button data-tab="products-airpods5"><span class="nav-ico">🎧</span><span class="nav-text">AirPods 5</span></button>
-   <button data-tab="products-airpodspro3"><span class="nav-ico">🎧</span><span class="nav-text">AirPods Pro 3</span></button>
-   <button data-tab="products-other"><span class="nav-ico">📱</span><span class="nav-text">Autres produits</span></button>
+   <button data-tab="products-max"><span class="nav-ico">🎧</span><span class="nav-text">AirPods Max</span></button>
+   <button data-tab="products-airpods5"><span class="nav-ico">🎵</span><span class="nav-text">AirPods 5</span></button>
+   <button data-tab="products-airpodspro3"><span class="nav-ico">🔊</span><span class="nav-text">AirPods Pro 3</span></button>
+   <button data-tab="products-watch"><span class="nav-ico">⌚</span><span class="nav-text">Watch</span></button>
+   <button data-tab="products-charger"><span class="nav-ico">🔌</span><span class="nav-text">Chargeur rapide</span></button>
+   <button data-tab="products-add"><span class="nav-ico">➕</span><span class="nav-text">Ajouter un produit</span></button>
    <button data-tab="sales"><span class="nav-ico">📈</span><span class="nav-text">Ventes & statistiques</span></button><button data-tab="promos"><span class="nav-ico">🎟️</span><span class="nav-text">Codes promo</span></button>
   </nav>
   <div class="side-foot"><a class="site-link" href="https://mlnpods25.fr/" target="_blank" rel="noopener">🌐 <span>Voir le site principal</span> <b>↗</b></a>ESPACE SÉCURISÉ<div class="admin"><div class="avatar">A</div><div class="admin-copy">Administrateur<br><span id="adminEmail">Compte connecté</span></div></div><button class="btn btn-quiet" id="logoutButton" style="width:100%;margin-top:13px">Déconnexion</button></div>
@@ -143,10 +148,21 @@ main{width:100%;max-width:1600px;margin:0 auto;padding:29px clamp(15px,3vw,42px)
 
   <section class="section" id="products">
    <div class="card"><div class="card-head"><div><h2>Produits & stocks</h2><p>Gère les stocks classiques, chaque variante et les dates de réapprovisionnement.</p></div><button class="btn btn-dark" id="refreshProducts">↻ Actualiser les produits</button></div>
-    <div class="toolbar"><input class="search" id="productSearch" placeholder="⌕ Rechercher un produit…"><span class="muted" id="productsMessage">Chargement…</span></div><form id="newProductForm" class="card" style="margin:12px 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px"><strong style="grid-column:1/-1">＋ Créer un produit</strong><input id="newProductName" required placeholder="Nom"><input id="newProductId" required placeholder="Identifiant unique"><input id="newProductPrice" type="number" min="0" step=".01" required placeholder="Prix de vente €"><input id="newProductOldPrice" type="number" min="0" step=".01" placeholder="Ancien prix €"><input id="newProductCost" type="number" min="0" step=".01" placeholder="Prix d'achat €"><input id="newProductStock" type="number" min="0" step="1" value="0" placeholder="Stock"><input id="newProductImage" placeholder="URL photo"><input id="newProductVideo" placeholder="URL vidéo"><button class="btn btn-gold" type="submit">Créer le produit</button><span id="newProductStatus" class="muted"></span></form><div class="product-list" id="productsList"></div>
+    <div class="toolbar"><input class="search" id="productSearch" placeholder="⌕ Rechercher un produit…"><span class="muted" id="productsMessage">Chargement…</span></div><div class="product-list" id="productsList"></div>
    </div>
   </section>
 
+  <section class="section" id="products-add">
+   <div class="card add-product-intro">
+    <div class="card-head"><div><h2>＋ Ajouter un nouveau produit</h2><p>Crée une fiche produit proprement. Les informations sont enregistrées dans ta base.</p></div><span class="pill">Nouveau produit</span></div>
+    <div class="add-product-note">💡 Utilise un identifiant simple et unique, par exemple <strong>enceinte-bluetooth</strong>. Les champs photo et vidéo attendent des liens directs.</div>
+   </div>
+   <div class="card add-product-card">
+    <h2>Informations du produit</h2>
+    <p class="muted">Renseigne les informations principales, le prix et le stock.</p>
+    <form id="newProductForm" class="card" style="margin:12px 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px"><strong style="grid-column:1/-1">＋ Créer un produit</strong><input id="newProductName" required placeholder="Nom"><input id="newProductId" required placeholder="Identifiant unique"><input id="newProductPrice" type="number" min="0" step=".01" required placeholder="Prix de vente €"><input id="newProductOldPrice" type="number" min="0" step=".01" placeholder="Ancien prix €"><input id="newProductCost" type="number" min="0" step=".01" placeholder="Prix d'achat €"><input id="newProductStock" type="number" min="0" step="1" value="0" placeholder="Stock"><input id="newProductImage" placeholder="URL photo"><input id="newProductVideo" placeholder="URL vidéo"><button class="btn btn-gold" type="submit">Créer le produit</button><span id="newProductStatus" class="muted"></span></form>
+   </div>
+  </section>
   <section class="section" id="promos">
    <div class="card">
     <div class="card-head"><div><h2>Créer un code promo</h2><p>Configure une réduction en pourcentage ou en euros à appliquer dans le panier.</p></div><button class="btn btn-dark" id="refreshPromos" type="button">↻ Actualiser les codes</button></div>
@@ -191,16 +207,16 @@ const dateFmt=v=>v?new Date(v).toLocaleString('fr-FR',{dateStyle:'short',timeSty
 const isCancelled=o=>String(o.status||'').toLowerCase().includes('annul');
 function setMessage(id,msg){const el=$(id);if(el)el.textContent=msg||'';}
 function go(tab){
- const productTab=tab.startsWith('products-');
- const sectionId=productTab?'products':tab;
- if(tab==='products-airpods5')activeProductFilter='airpods5';
- else if(tab==='products-airpodspro3')activeProductFilter='airpodspro3';
- else if(tab==='products-other')activeProductFilter='other';
+ const productTab=tab.startsWith('products-') && tab!=='products-add';
+ const sectionId=tab==='products-add'?'products-add':productTab?'products':tab;
+ const filters={'products-max':'max','products-airpods5':'airpods5','products-airpodspro3':'airpodspro3','products-watch':'watch','products-charger':'charger'};
+ if(filters[tab])activeProductFilter=filters[tab];
  document.querySelectorAll('.section').forEach(s=>s.classList.toggle('active',s.id===sectionId));
  document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
- const names={overview:["Vue d'ensemble","Retrouve l'essentiel de ta boutique en un coup d'œil."],orders:["Commandes","Consulte les commandes et suis leur avancement."],"products-airpods5":["AirPods 5","Gère le prix et le stock des AirPods 5."],"products-airpodspro3":["AirPods Pro 3","Gère le prix et le stock des AirPods Pro 3."],"products-other":["Autres produits","Gère les AirPods Max, la Watch et les autres produits."],sales:["Ventes & statistiques","Analyse ton chiffre d'affaires sur différentes périodes."],promos:["Codes promo","Crée et gère les réductions de ta boutique."]};
- $('pageTitle').textContent=names[tab][0];$('pageSubtitle').textContent=names[tab][1];
- if(productTab)renderProducts();if(tab==='sales')renderSales();
+ const names={overview:["Vue d'ensemble","Retrouve l'essentiel de ta boutique en un coup d'œil."],orders:["Commandes","Consulte les commandes et suis leur avancement."],"products-max":["AirPods Max","Gère le prix, les promotions et le stock des AirPods Max."],"products-airpods5":["AirPods 5","Gère le prix, les promotions et le stock des AirPods 5."],"products-airpodspro3":["AirPods Pro 3","Gère le prix, les promotions et le stock des AirPods Pro 3."],"products-watch":["Watch","Gère le prix, les promotions et le stock de la Watch."],"products-charger":["Chargeur rapide","Gère le prix, les promotions et le stock des chargeurs."],"products-add":["Ajouter un produit","Crée une nouvelle fiche produit."],"sales":["Ventes & statistiques","Analyse ton chiffre d'affaires sur différentes périodes."],"promos":["Codes promo","Crée et gère les réductions de ta boutique."]};
+ $('pageTitle').textContent=names[tab]?.[0]||"Administration";$('pageSubtitle').textContent=names[tab]?.[1]||"";
+ if(productTab)renderProducts();
+ if(tab==='sales')renderSales();
 }
 function setLogged(on){$('login').classList.toggle('hidden',on);$('app').classList.toggle('hidden',!on);}
 async function loadProducts(){
@@ -280,7 +296,10 @@ function renderProducts(){
  const visibleProducts=products.filter(p=>{
   const n=String(p.name||'').trim().toLowerCase();
   if(activeProductFilter==='airpods5'||activeProductFilter==='airpodspro3')return n==='airpods';
-  return n!=='airpods';
+  if(activeProductFilter==='max')return n.includes('max');
+  if(activeProductFilter==='watch')return n.includes('watch')||n.includes('montre');
+  if(activeProductFilter==='charger')return n.includes('chargeur')||n.includes('charger');
+  return true;
  });
  $('productsList').innerHTML=visibleProducts.length?visibleProducts.map(p=>{
  const n=String(p.name||'').trim().toLowerCase();
@@ -451,8 +470,21 @@ function makeInvoice(o){
  return {number:n,html:`<!doctype html><html lang="fr"><meta charset="utf-8"><title>Facture ${n}</title><style>body{font:14px Arial;margin:35px;color:#111}header{background:#080808;color:#f4c928;padding:22px;border-radius:12px}h1{margin:0}table{width:100%;border-collapse:collapse;margin-top:25px}th{background:#111;color:#f4c928;text-align:left}td,th{padding:12px;border-bottom:1px solid #ddd}.total{text-align:right;font-size:22px;font-weight:bold;margin-top:25px}.meta{display:flex;justify-content:space-between;margin:24px 0}</style><header><h1>MLNPODS</h1>FACTURE ${n}</header><div class="meta"><div><b>Client</b><br>${esc(o.email||'—')}<br>${esc(o.phone||'—')}<br>${esc(o.address||'—')}</div><div><b>Commande</b><br>N° ${esc(o.order_number||'—')}<br>${esc(dateFmt(o.created_at))}<br>${esc(o.payment_method||'—')}</div></div><table><tr><th>Produit</th><th>Qté</th><th>Prix unitaire</th><th>Total</th></tr>${lines}</table><div class="total">Total : ${euro(o.total??o.subtotal??0)}</div><p>Sous-total : ${euro(o.subtotal||0)} · Livraison : ${euro(o.delivery_fee||0)} · Réduction : ${euro(o.discount_amount||0)}</p><p>Merci pour votre commande chez MlnPods.</p></html>`};
 }
 function invoiceDownload(btn){const card=btn.closest('.order-card'),o=orders.find(x=>String(x.id)===card.dataset.orderId);if(!o)return;const inv=makeInvoice(o),w=window.open('','_blank');if(!w){alert('Autorise les fenêtres surgissantes.');return;}w.document.write(inv.html);w.document.close();setTimeout(()=>w.print(),350);}
-function invoiceWhatsapp(btn){const card=btn.closest('.order-card'),o=orders.find(x=>String(x.id)===card.dataset.orderId);if(!o)return;const inv=makeInvoice(o);const msg=`Bonjour, voici la facture ${inv.number} de votre commande MlnPods. Je vous joins le PDF à ce message. Merci pour votre confiance !`;window.open('https://wa.me/'+String(o.phone||'').replace(/\D/g,'')+'?text='+encodeURIComponent(msg),'_blank');}
-async function finishOrder(btn){const card=btn.closest('.order-card'),o=orders.find(x=>String(x.id)===card.dataset.orderId);if(!o||!confirm('Confirmer que la commande est terminée ?'))return;const {error}=await db.from('orders').update({status:'Terminée'}).eq('id',o.id);if(error){alert(error.message);return;}o.status='Terminée';renderOrders();renderOverview();renderSales();const msg=`Bonjour ! Votre commande MlnPods est terminée. Merci pour votre confiance ! N'hésitez pas à nous envoyer votre avis avec une photo ou vidéo sur WhatsApp ou Snapchat : https://snapchat.com/t/IajgPDC6`;window.open('https://wa.me/'+String(o.phone||'').replace(/\D/g,'')+'?text='+encodeURIComponent(msg),'_blank');}
+function whatsappNumber(raw){
+ const digits=String(raw||'').replace(/\\D/g,'');
+ if(!digits)return '';
+ if(digits.startsWith('00'))return digits.slice(2);
+ if(digits.startsWith('0'))return '33'+digits.slice(1);
+ if(digits.startsWith('33'))return digits;
+ return digits;
+}
+function openCustomerWhatsApp(order,message){
+ const phone=whatsappNumber(order.phone);
+ if(!phone){alert("Aucun numéro de téléphone client n'est renseigné pour cette commande.");return;}
+ window.open('https://wa.me/'+phone+'?text='+encodeURIComponent(message),'_blank','noopener');
+}
+function invoiceWhatsapp(btn){const card=btn.closest('.order-card'),o=orders.find(x=>String(x.id)===card.dataset.orderId);if(!o)return;const inv=makeInvoice(o);const msg=`Bonjour, voici la facture ${inv.number} de votre commande MlnPods. Je vous joins le PDF à ce message. Merci pour votre confiance !`;openCustomerWhatsApp(o,msg);}
+async function finishOrder(btn){const card=btn.closest('.order-card'),o=orders.find(x=>String(x.id)===card.dataset.orderId);if(!o||!confirm('Confirmer que la commande est terminée ?'))return;const {error}=await db.from('orders').update({status:'Terminée'}).eq('id',o.id);if(error){alert(error.message);return;}o.status='Terminée';renderOrders();renderOverview();renderSales();const msg=`Bonjour ! Votre commande MlnPods est terminée. Merci pour votre confiance ! N'hésitez pas à nous envoyer votre avis avec une photo ou vidéo sur WhatsApp ou Snapchat : https://snapchat.com/t/IajgPDC6`;openCustomerWhatsApp(o,msg);}
 async function addProduct(ev){ev.preventDefault();const st=$('newProductStatus');st.textContent='Création…';const id=$('newProductId').value.trim().toLowerCase().replace(/[^a-z0-9-]/g,'-'),name=$('newProductName').value.trim(),price=Number($('newProductPrice').value),qty=Number($('newProductStock').value||0);if(!id||!name||!Number.isFinite(price)||price<0||!Number.isInteger(qty)||qty<0){st.textContent='Vérifie les champs.';return;}const row={id,name,price,old_price:$('newProductOldPrice').value===''?null:Number($('newProductOldPrice').value),cost_price:$('newProductCost').value===''?null:Number($('newProductCost').value),stock_quantity:qty,in_stock:qty>0,image_url:$('newProductImage').value.trim()||null,video_url:$('newProductVideo').value.trim()||null,is_visible:true};const {error}=await db.from('products').insert(row);if(error){st.textContent='Erreur : '+error.message;return;}$('newProductForm').reset();st.textContent='Produit ajouté dans Supabase. L’affichage public dépend du catalogue du site.';await loadProducts();}
 async function loadPageViews(){const {data,error}=await db.from('product_page_views').select('page_key,created_at').gte('created_at',new Date(Date.now()-30*86400000).toISOString());if(error){if($('salesViews'))$('salesViews').textContent='À configurer';return;}productViews=data||[];if($('salesViews'))$('salesViews').textContent=productViews.length;}
 async function init(){
@@ -466,7 +498,7 @@ async function init(){
  }
  $('loginForm')?.addEventListener('submit',login);$('logoutButton')?.addEventListener('click',logout);
  $('refreshAll')?.addEventListener('click',refreshAll);$('refreshProducts')?.addEventListener('click',loadProducts);$('promoForm')?.addEventListener('submit',createPromo);$('promoList')?.addEventListener('click',promoAction);
- $('quickProducts').addEventListener('click',()=>go('products-airpods5'));
+ $('quickProducts').addEventListener('click',()=>go('products-add'));
  document.querySelectorAll('.nav button').forEach(b=>b.addEventListener('click',()=>go(b.dataset.tab)));
  document.querySelectorAll('[data-goto]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.goto)));
  $('productsList').addEventListener('click',e=>{
